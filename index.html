@@ -668,44 +668,51 @@
 
 <script>
 // ═══════════════════════════════════════════════
-// USERS  (хранятся в localStorage под ключом cig_users)
+// USERS  — хранятся в Supabase (таблица users)
 // roles: admin | manager | viewer
 // ═══════════════════════════════════════════════
-const DEFAULT_USERS = [
-  { login: 'admin',    password: 'admin123',   role: 'admin',   name: 'Администратор' },
-  { login: 'manager',  password: 'manager123', role: 'manager', name: 'Менеджер' },
-  { login: 'viewer',   password: 'view123',    role: 'viewer',  name: 'Просмотр' },
-];
-
-function loadUsers() {
-  const stored = localStorage.getItem('cig_users');
-  return stored ? JSON.parse(stored) : DEFAULT_USERS;
-}
-function saveUsers(users) {
-  localStorage.setItem('cig_users', JSON.stringify(users));
-}
-
-let USERS = loadUsers();
+let USERS = [];
 let currentUser = null;
+
+async function loadUsers() {
+  const { data, error } = await db.from('users').select('*');
+  if (error) { console.error('loadUsers error:', error); return []; }
+  USERS = data || [];
+  return USERS;
+}
+
+async function saveUsers(users) {
+  // Not used — saves are targeted per user
+}
 
 // ── ROLE CAPABILITIES ──
 const CAN_EDIT = u => u && (u.role === 'admin' || u.role === 'manager');
 const IS_ADMIN  = u => u && u.role === 'admin';
 
 // ── LOGIN ──
-function doLogin() {
+async function doLogin() {
   const login = document.getElementById('loginUser').value.trim();
   const pass  = document.getElementById('loginPass').value;
-  USERS = loadUsers();
-  const user = USERS.find(u => u.login === login && u.password === pass);
-  if (!user) {
+  const loginBtn = document.querySelector('.btn-login');
+  loginBtn.textContent = 'Вход...';
+  loginBtn.disabled = true;
+  try {
+    const { data, error } = await db.from('users')
+      .select('*').eq('login', login).eq('password', pass).single();
+    if (error || !data) {
+      document.getElementById('loginErr').classList.add('show');
+      document.getElementById('loginPass').value = '';
+      return;
+    }
+    currentUser = data;
+    localStorage.setItem('cig_session', JSON.stringify({ login: data.login }));
+    startApp();
+  } catch(e) {
     document.getElementById('loginErr').classList.add('show');
-    document.getElementById('loginPass').value = '';
-    return;
+  } finally {
+    loginBtn.textContent = 'Войти';
+    loginBtn.disabled = false;
   }
-  currentUser = user;
-  localStorage.setItem('cig_session', JSON.stringify({ login: user.login }));
-  startApp();
 }
 
 function doLogout() {
@@ -740,11 +747,10 @@ function startApp() {
 }
 
 // ── ADMIN PANEL ──
-function renderAdminPanel() {
-  USERS = loadUsers();
-  const roleNames = { admin: 'admin', manager: 'manager', viewer: 'viewer' };
-  const rClass    = { admin: 'role-admin', manager: 'role-manager', viewer: 'role-viewer' };
-  const rLabel    = { admin: 'Администратор', manager: 'Менеджер', viewer: 'Просмотр' };
+async function renderAdminPanel() {
+  await loadUsers();
+  const rClass = { admin: 'role-admin', manager: 'role-manager', viewer: 'role-viewer' };
+  const rLabel = { admin: 'Администратор', manager: 'Менеджер', viewer: 'Просмотр' };
 
   document.getElementById('userList').innerHTML = USERS.map(u => `
     <div class="user-row">
@@ -759,18 +765,15 @@ function renderAdminPanel() {
   sel.innerHTML = USERS.map(u => `<option value="${esc(u.login)}">${esc(u.name)} (${esc(u.login)})</option>`).join('');
 }
 
-function changePassword() {
+async function changePassword() {
   const login = document.getElementById('changePwUser').value;
   const newPw = document.getElementById('newPassword').value.trim();
   if (!newPw || newPw.length < 4) { toast('Пароль должен быть не менее 4 символов', 'error'); return; }
-  USERS = loadUsers();
-  const user = USERS.find(u => u.login === login);
-  if (user) {
-    user.password = newPw;
-    saveUsers(USERS);
-    document.getElementById('newPassword').value = '';
-    toast('Пароль для ' + user.name + ' изменён', 'success');
-  }
+  const { error } = await db.from('users').update({ password: newPw }).eq('login', login);
+  if (error) { toast('Ошибка: ' + error.message, 'error'); return; }
+  document.getElementById('newPassword').value = '';
+  await loadUsers();
+  toast('Пароль изменён — вступит в силу при следующем входе', 'success');
 }
 
 // ── SUPABASE ──
@@ -1246,15 +1249,15 @@ document.getElementById('confirmOverlay').addEventListener('click', e => {
 });
 
 // ── INIT ──
-(function init() {
+(async function init() {
   const session = localStorage.getItem('cig_session');
   if (session) {
     try {
       const s = JSON.parse(session);
-      USERS = loadUsers();
-      const user = USERS.find(u => u.login === s.login);
-      if (user) { currentUser = user; startApp(); return; }
+      const { data, error } = await db.from('users').select('*').eq('login', s.login).single();
+      if (data && !error) { currentUser = data; startApp(); return; }
     } catch(e) {}
+    localStorage.removeItem('cig_session');
   }
   document.getElementById('loginUser').focus();
 })();
