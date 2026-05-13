@@ -435,7 +435,7 @@
           <option value="low">Мало (&lt; 5 шт.)</option>
           <option value="out">Нет в наличии</option>
         </select>
-        <button class="btn-clear-filter" onclick="clearStockFilter()">Сбросить</button>
+        <button class="btn-clear-filter" onclick="clearStockFilter()" id="btnClearStock">Сбросить</button>
       </div>
       <div class="table-wrap">
         <table>
@@ -466,7 +466,7 @@
         <input class="filter-date" type="date" id="filterIncomingDateFrom" onchange="renderIncoming()"/>
         <span class="filter-label">—</span>
         <input class="filter-date" type="date" id="filterIncomingDateTo" onchange="renderIncoming()"/>
-        <button class="btn-clear-filter" onclick="clearIncomingFilter()">Сбросить</button>
+        <button class="btn-clear-filter" onclick="clearIncomingFilter()" id="btnClearIncoming">Сбросить</button>
       </div>
       <div class="table-wrap">
         <table>
@@ -496,7 +496,7 @@
         <input class="filter-date" type="date" id="filterSalesDateFrom" onchange="renderSales()"/>
         <span class="filter-label">—</span>
         <input class="filter-date" type="date" id="filterSalesDateTo" onchange="renderSales()"/>
-        <button class="btn-clear-filter" onclick="clearSalesFilter()">Сбросить</button>
+        <button class="btn-clear-filter" onclick="clearSalesFilter()" id="btnClearSales">Сбросить</button>
       </div>
       <div class="table-wrap">
         <table>
@@ -740,6 +740,13 @@ function startApp() {
   ['btnAddIncoming','btnAddIncoming2','btnAddSale','btnAddSale2'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = canEdit ? '' : 'none';
+  });
+
+  // show/hide reset filter buttons (admin only)
+  const isAdmin = IS_ADMIN(currentUser);
+  ['btnClearStock','btnClearIncoming','btnClearSales'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isAdmin ? '' : 'none';
   });
 
   dbLoad();
