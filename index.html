@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>Учёт сигарного стока — Бакинские Афисионадо</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --bg: #1a1209;
@@ -661,6 +662,7 @@
   </div>
 </div>
 
+<div id="loadingOverlay"><div class="spinner"></div><div class="loading-text">Загрузка данных...</div></div>
 <div id="toast"></div>
 
 <script>
@@ -732,8 +734,7 @@ function startApp() {
     if (el) el.style.display = canEdit ? '' : 'none';
   });
 
-  load();
-  renderAll();
+  dbLoad();
   if (IS_ADMIN(currentUser)) renderAdminPanel();
 }
 
@@ -771,19 +772,65 @@ function changePassword() {
   }
 }
 
+// ── SUPABASE ──
+const SUPA_URL = 'https://ftljvmypjetcodtoegia.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ0bGp2bXlwamV0Y29kdG9lZ2lhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NDk5MzksImV4cCI6MjA5NDIyNTkzOX0.MXCcm5odUr4DWIurrUDuuvkycYYtfgI5k5PxLBkg5AE';
+const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
 // ── DATA ──
 let stock = [], incoming = [], sales = [];
-const KEYS = { stock: 'cig_stock', incoming: 'cig_incoming', sales: 'cig_sales' };
 
-function save() {
-  localStorage.setItem(KEYS.stock,    JSON.stringify(stock));
-  localStorage.setItem(KEYS.incoming, JSON.stringify(incoming));
-  localStorage.setItem(KEYS.sales,    JSON.stringify(sales));
+function showLoading(on) {
+  document.getElementById('loadingOverlay').classList.toggle('show', on);
 }
-function load() {
-  stock    = JSON.parse(localStorage.getItem(KEYS.stock)    || '[]');
-  incoming = JSON.parse(localStorage.getItem(KEYS.incoming) || '[]');
-  sales    = JSON.parse(localStorage.getItem(KEYS.sales)    || '[]');
+
+async function dbLoad() {
+  showLoading(true);
+  try {
+    const [s, i, sa] = await Promise.all([
+      db.from('stock').select('id,name,qty,price,date').order('id'),
+      db.from('incoming').select('*').order('date', { ascending: false }),
+      db.from('sales').select('*').order('date', { ascending: false })
+    ]);
+    if (s.error) throw s.error;
+    if (i.error) throw i.error;
+    if (sa.error) throw sa.error;
+    stock    = (s.data || []).map(r => ({ ...r, total: r.qty * r.price }));
+    incoming = i.data || [];
+    sales    = sa.data || [];
+    renderAll();
+  } catch(e) {
+    toast('Ошибка загрузки: ' + e.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function dbUpsertStock(item) {
+  const { error } = await db.from('stock')
+    .upsert({ name: item.name, qty: item.qty, price: item.price, date: item.date }, { onConflict: 'name' });
+  if (error) throw error;
+}
+
+async function dbInsertIncoming(record) {
+  const { error } = await db.from('incoming').insert({
+    id: Date.now(), date: record.date, name: record.name,
+    qty: record.qty, price: record.price, total: record.total, comment: record.comment || ''
+  });
+  if (error) throw error;
+}
+
+async function dbInsertSale(record) {
+  const { error } = await db.from('sales').insert({
+    id: Date.now(), date: record.date, name: record.name,
+    qty: record.qty, price: record.price, total: record.total, comment: record.comment || ''
+  });
+  if (error) throw error;
+}
+
+async function dbDeleteSale(saleId) {
+  const { error } = await db.from('sales').delete().eq('id', saleId);
+  if (error) throw error;
 }
 
 // ── SORT ──
@@ -996,7 +1043,7 @@ function fillSalePrice() {
   document.getElementById('saleStock').textContent = item ? item.qty + ' шт.' : '—';
 }
 
-function submitIncoming() {
+async function submitIncoming() {
   if (!CAN_EDIT(currentUser)) return;
   const date    = document.getElementById('inDate').value;
   const name    = document.getElementById('inName').value.trim();
@@ -1018,7 +1065,7 @@ function submitIncoming() {
   toast('Поступление добавлено: ' + name + ' ×' + qty, 'success');
 }
 
-function submitSale() {
+async function submitSale() {
   if (!CAN_EDIT(currentUser)) return;
   const date    = document.getElementById('saleDate').value;
   const name    = document.getElementById('saleName').value;
@@ -1101,7 +1148,7 @@ function openEditStock(stockId) {
   setTimeout(() => document.getElementById('editQty').focus(), 150);
 }
 
-function submitEditStock() {
+async function submitEditStock() {
   if (!CAN_EDIT(currentUser)) return;
   const qty     = parseInt(document.getElementById('editQty').value);
   const price   = parseFloat(document.getElementById('editPrice').value);
@@ -1118,25 +1165,24 @@ function submitEditStock() {
   const item = stock.find(r => String(r.id) === String(editingStockId));
   if (!item) return;
 
-  const oldQty   = item.qty;
-  const oldPrice = item.price;
-  item.qty   = qty;
-  item.price = price;
-  item.total = qty * price;
-  item.date  = todayStr();
-
-  // Log to incoming or sales history for audit
-  const diff = qty - oldQty;
-  if (diff > 0) {
-    incoming.push({ id: Date.now() + Math.random(), date: todayStr(), name: item.name, qty: diff, price, total: diff * price, comment: '✏️ Ручная корректировка' + (comment ? ': ' + comment : '') });
-  } else if (diff < 0) {
-    sales.push({ id: Date.now() + Math.random(), date: todayStr(), name: item.name, qty: Math.abs(diff), price, total: Math.abs(diff) * price, comment: '✏️ Ручная корректировка' + (comment ? ': ' + comment : '') });
+  showLoading(true);
+  try {
+    const diff = qty - item.qty;
+    const note = '✏️ Ручная корректировка' + (comment ? ': ' + comment : '');
+    await dbUpsertStock({ name: item.name, qty, price, date: todayStr() });
+    if (diff > 0) {
+      await dbInsertIncoming({ date: todayStr(), name: item.name, qty: diff, price, total: diff * price, comment: note });
+    } else if (diff < 0) {
+      await dbInsertSale({ date: todayStr(), name: item.name, qty: Math.abs(diff), price, total: Math.abs(diff) * price, comment: note });
+    }
+    closeModal('modalEditStock');
+    toast('Позиция обновлена: ' + item.name, 'success');
+    await dbLoad();
+  } catch(e) {
+    toast('Ошибка: ' + e.message, 'error');
+  } finally {
+    showLoading(false);
   }
-
-  save();
-  renderAll();
-  closeModal('modalEditStock');
-  toast('Позиция обновлена: ' + item.name, 'success');
 }
 
 // ── ROLLBACK ──
@@ -1157,30 +1203,25 @@ function closeConfirm() {
   document.getElementById('confirmOverlay').classList.remove('open');
 }
 
-function confirmRollback() {
+async function confirmRollback() {
   if (!pendingRollbackId) return;
-  const idx = sales.findIndex(s => String(s.id) === String(pendingRollbackId));
-  if (idx === -1) { closeConfirm(); return; }
-  const sale = sales[idx];
+  const sale = sales.find(s => String(s.id) === String(pendingRollbackId));
+  if (!sale) { closeConfirm(); return; }
 
-  // Return qty to stock
-  const item = stock.find(r => r.name === sale.name);
-  if (item) {
-    item.qty  += sale.qty;
-    item.total = item.qty * item.price;
-    item.date  = todayStr();
-  } else {
-    // Item was fully deleted — recreate
-    stock.push({ id: stock.length + 1, name: sale.name, qty: sale.qty, price: sale.price, total: sale.qty * sale.price, date: todayStr() });
+  showLoading(true);
+  try {
+    const item = stock.find(r => r.name === sale.name);
+    const newQty = item ? item.qty + sale.qty : sale.qty;
+    await dbUpsertStock({ name: sale.name, qty: newQty, price: item ? item.price : sale.price, date: todayStr() });
+    await dbDeleteSale(sale.id);
+    closeConfirm();
+    toast('Продажа откатана: ' + sale.name + ' × ' + sale.qty + ' шт. возвращено на склад', 'success');
+    await dbLoad();
+  } catch(e) {
+    toast('Ошибка: ' + e.message, 'error');
+  } finally {
+    showLoading(false);
   }
-
-  // Remove sale record
-  sales.splice(idx, 1);
-
-  save();
-  renderAll();
-  closeConfirm();
-  toast('Продажа откатана: ' + sale.name + ' × ' + sale.qty + ' шт. возвращено на склад', 'success');
 }
 
 // Close confirm on overlay click
