@@ -305,6 +305,15 @@
 
   select option { background: #231a0d; color: #f0e6d3; }
 
+
+  /* ── EDIT STOCK ── */
+  .btn-edit {
+    background: none; border: 1px solid #3d2e18; color: #b8a88a;
+    border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .btn-edit:hover { border-color: var(--gold); color: var(--gold2); background: rgba(201,168,76,0.08); }
+
   /* ── ROLLBACK ── */
   .btn-rollback {
     background: none; border: 1px solid #5d4037; color: #b8a88a;
@@ -435,6 +444,7 @@
             <th onclick="sortTable('stock','price')">Цена, AZN <span class="sort-arrow">↕</span></th>
             <th onclick="sortTable('stock','total')">Сумма, AZN <span class="sort-arrow">↕</span></th>
             <th onclick="sortTable('stock','date')">Изменено <span class="sort-arrow">↕</span></th>
+            <th id="thStockAction" style="width:70px"></th>
           </tr></thead>
           <tbody id="bodyStock"></tbody>
         </table>
@@ -606,6 +616,37 @@
   </div>
 </div>
 
+
+
+<!-- EDIT STOCK MODAL -->
+<div class="modal-overlay" id="modalEditStock">
+  <div class="modal">
+    <div class="modal-drag"></div>
+    <h2>✏️ Редактировать позицию</h2>
+    <div class="form-group">
+      <label>Наименование</label>
+      <div id="editStockName" style="font-size:15px;font-weight:600;color:var(--gold2);padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:4px"></div>
+    </div>
+    <div class="form-group">
+      <label>Количество, шт. *</label>
+      <input type="number" id="editQty" min="0" inputmode="numeric" placeholder="Количество"/>
+      <div class="err-msg" id="errEditQty">Введите корректное количество (≥ 0)</div>
+    </div>
+    <div class="form-group">
+      <label>Цена за штуку, AZN *</label>
+      <input type="number" id="editPrice" min="0.01" step="0.01" inputmode="decimal" placeholder="Цена"/>
+      <div class="err-msg" id="errEditPrice">Введите корректную цену (> 0)</div>
+    </div>
+    <div class="form-group">
+      <label>Комментарий к изменению</label>
+      <input type="text" id="editComment" placeholder="Необязательно"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modalEditStock')">Отмена</button>
+      <button class="btn btn-primary" onclick="submitEditStock()">Сохранить</button>
+    </div>
+  </div>
+</div>
 
 <!-- CONFIRM ROLLBACK MODAL -->
 <div id="confirmOverlay">
@@ -801,7 +842,8 @@ function renderStock() {
   if (status === 'out') data = data.filter(r => r.qty === 0);
   updateSortArrows('stock', ['id','name','qty','price','total','date']);
   const tbody = document.getElementById('bodyStock');
-  if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет данных</td></tr>'; return; }
+  if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Нет данных</td></tr>'; return; }
+  const canEdit = CAN_EDIT(currentUser);
   tbody.innerHTML = data.map(r => {
     const qc = r.qty === 0 ? 'badge-out' : r.qty < 5 ? 'badge-low' : '';
     return `<tr>
@@ -811,6 +853,7 @@ function renderStock() {
       <td class="td-price">${formatNum(r.price)}</td>
       <td class="td-total">${formatNum(r.qty*r.price)}</td>
       <td class="td-date">${formatDate(r.date)}</td>
+      <td>${canEdit ? `<button class="btn-edit" onclick="openEditStock('${r.id}')">✏️ Изменить</button>` : ''}</td>
     </tr>`;
   }).join('');
 }
@@ -1038,6 +1081,63 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
   o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
 });
 
+
+
+// ── EDIT STOCK ──
+let editingStockId = null;
+
+function openEditStock(stockId) {
+  if (!CAN_EDIT(currentUser)) return;
+  const item = stock.find(r => String(r.id) === String(stockId));
+  if (!item) return;
+  editingStockId = stockId;
+  document.getElementById('editStockName').textContent = item.name;
+  document.getElementById('editQty').value   = item.qty;
+  document.getElementById('editPrice').value = item.price.toFixed(2);
+  document.getElementById('editComment').value = '';
+  document.querySelectorAll('#modalEditStock .err-msg').forEach(e => e.classList.remove('show'));
+  document.querySelectorAll('#modalEditStock input').forEach(e => e.classList.remove('error'));
+  document.getElementById('modalEditStock').classList.add('open');
+  setTimeout(() => document.getElementById('editQty').focus(), 150);
+}
+
+function submitEditStock() {
+  if (!CAN_EDIT(currentUser)) return;
+  const qty     = parseInt(document.getElementById('editQty').value);
+  const price   = parseFloat(document.getElementById('editPrice').value);
+  const comment = document.getElementById('editComment').value.trim();
+
+  let ok = true;
+  document.querySelectorAll('#modalEditStock .err-msg').forEach(e => e.classList.remove('show'));
+  document.querySelectorAll('#modalEditStock input').forEach(e => e.classList.remove('error'));
+
+  if (isNaN(qty) || qty < 0)    { document.getElementById('editQty').classList.add('error');   document.getElementById('errEditQty').classList.add('show');   ok = false; }
+  if (isNaN(price) || price <= 0){ document.getElementById('editPrice').classList.add('error'); document.getElementById('errEditPrice').classList.add('show'); ok = false; }
+  if (!ok) return;
+
+  const item = stock.find(r => String(r.id) === String(editingStockId));
+  if (!item) return;
+
+  const oldQty   = item.qty;
+  const oldPrice = item.price;
+  item.qty   = qty;
+  item.price = price;
+  item.total = qty * price;
+  item.date  = todayStr();
+
+  // Log to incoming or sales history for audit
+  const diff = qty - oldQty;
+  if (diff > 0) {
+    incoming.push({ id: Date.now() + Math.random(), date: todayStr(), name: item.name, qty: diff, price, total: diff * price, comment: '✏️ Ручная корректировка' + (comment ? ': ' + comment : '') });
+  } else if (diff < 0) {
+    sales.push({ id: Date.now() + Math.random(), date: todayStr(), name: item.name, qty: Math.abs(diff), price, total: Math.abs(diff) * price, comment: '✏️ Ручная корректировка' + (comment ? ': ' + comment : '') });
+  }
+
+  save();
+  renderAll();
+  closeModal('modalEditStock');
+  toast('Позиция обновлена: ' + item.name, 'success');
+}
 
 // ── ROLLBACK ──
 let pendingRollbackId = null;
