@@ -1117,7 +1117,21 @@ async function submitSale() {
     document.getElementById('errSaleQty').textContent = 'Превышает остаток';
     return;
   }
-  // (handled by async version above)
+  showLoading(true);
+  try {
+    await dbInsertSale({ date, name, qty, price, total: qty * price, comment });
+    await dbUpsertStock({ name, qty: item.qty - qty, price: item.price, date });
+    closeModal('modalSale');
+    toast('Продажа оформлена: ' + name + ' ×' + qty, 'success');
+    await dbLoad();
+  } catch(e) {
+    console.error('submitSale error:', e);
+    const al = document.getElementById('alertSale');
+    al.textContent = 'Ошибка: ' + e.message;
+    al.classList.add('show');
+  } finally {
+    showLoading(false);
+  }
 }
 
 // ── HELPERS ──
