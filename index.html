@@ -440,7 +440,6 @@
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th onclick="sortTable('stock','id')">№ <span class="sort-arrow">↕</span></th>
             <th onclick="sortTable('stock','name')">Наименование <span class="sort-arrow">↕</span></th>
             <th onclick="sortTable('stock','qty')">Кол-во <span class="sort-arrow">↕</span></th>
             <th onclick="sortTable('stock','price')">Цена, AZN <span class="sort-arrow">↕</span></th>
@@ -907,14 +906,13 @@ function renderStock() {
   if (status === 'ok')  data = data.filter(r => r.qty >= 1);
   if (status === 'low') data = data.filter(r => r.qty > 0 && r.qty < 5);
   if (status === 'out') data = data.filter(r => r.qty === 0);
-  updateSortArrows('stock', ['id','name','qty','price','total','date']);
+  updateSortArrows('stock', ['name','qty','price','total','date']);
   const tbody = document.getElementById('bodyStock');
-  if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Нет данных</td></tr>'; return; }
+  if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет данных</td></tr>'; return; }
   const canEdit = CAN_EDIT(currentUser);
   tbody.innerHTML = data.map(r => {
     const qc = r.qty === 0 ? 'badge-out' : r.qty < 5 ? 'badge-low' : '';
     return `<tr>
-      <td class="td-date">${r.id}</td>
       <td class="td-name">${esc(r.name)}</td>
       <td class="td-qty ${qc}">${r.qty}</td>
       <td class="td-price">${formatNum(r.price)}</td>
