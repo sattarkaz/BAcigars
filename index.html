@@ -431,7 +431,7 @@
         <span class="filter-label">Фильтр:</span>
         <select class="filter-select" id="filterStockStatus" onchange="renderStock()">
           <option value="">Все позиции</option>
-          <option value="ok">В наличии</option>
+          <option value="ok" selected>В наличии</option>
           <option value="low">Мало (&lt; 5 шт.)</option>
           <option value="out">Нет в наличии</option>
         </select>
@@ -904,7 +904,7 @@ function renderStock() {
   const status = document.getElementById('filterStockStatus').value;
   let data = sorted(stock, 'stock');
   if (search) data = data.filter(r => r.name.toLowerCase().includes(search));
-  if (status === 'ok')  data = data.filter(r => r.qty >= 5);
+  if (status === 'ok')  data = data.filter(r => r.qty >= 1);
   if (status === 'low') data = data.filter(r => r.qty > 0 && r.qty < 5);
   if (status === 'out') data = data.filter(r => r.qty === 0);
   updateSortArrows('stock', ['id','name','qty','price','total','date']);
@@ -925,7 +925,7 @@ function renderStock() {
   }).join('');
 }
 function clearStockFilter() {
-  document.getElementById('filterStockStatus').value = '';
+  document.getElementById('filterStockStatus').value = 'ok';
   document.getElementById('searchStock').value = '';
   renderStock();
 }
