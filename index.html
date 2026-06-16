@@ -1064,7 +1064,7 @@ function renderStock() {
         <td class="td-price">${formatNum(r.price)}</td>
         <td class="td-total">${formatNum(r.qty*r.price)}</td>
         <td class="td-date">${formatDate(r.date)}</td>
-        <td class="td-comment" style="${(!r.comment || r.comment === '—') ? 'display:none' : ''}">${esc(r.comment||'')}</td>
+        <td class="td-comment">${esc(r.comment||'')}</td>
         <td>${canEdit ? `<button class="btn-edit" onclick="openEditStock('${r.id}')">✏️ Изменить</button>` : ''}</td>
       </tr>`;
     }).join('');
