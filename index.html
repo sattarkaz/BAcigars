@@ -790,6 +790,7 @@ async function saveUsers(users) {
 // ── ROLE CAPABILITIES ──
 const CAN_EDIT = u => u && (u.role === 'admin' || u.role === 'manager');
 const IS_ADMIN  = u => u && u.role === 'admin';
+const CAN_SALE  = u => u && (u.role === 'admin' || u.role === 'manager');
 
 // ── LOGIN ──
 async function doLogin() {
@@ -838,10 +839,15 @@ function startApp() {
   document.getElementById('tabAdmin').style.display = IS_ADMIN(currentUser) ? '' : 'none';
 
   // show/hide action buttons
-  const canEdit = CAN_EDIT(currentUser);
-  ['btnAddIncoming','btnAddIncoming2','btnAddSale','btnAddSale2'].forEach(id => {
+  const canEdit = IS_ADMIN(currentUser);
+  const canSale = CAN_SALE(currentUser);
+  ['btnAddIncoming','btnAddIncoming2'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = canEdit ? '' : 'none';
+  });
+  ['btnAddSale','btnAddSale2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = canSale ? '' : 'none';
   });
 
   // show/hide reset filter buttons (admin only)
@@ -988,9 +994,9 @@ function switchTab(name) {
   document.getElementById('panel-' + name).classList.add('active');
 
   // Mobile FAB: show incoming on stock/incoming tabs, sale on stock/sales tabs
-  const canEdit = CAN_EDIT(currentUser);
-  const showInc = canEdit && (name === 'stock' || name === 'incoming');
-  const showSale = canEdit && (name === 'stock' || name === 'sales');
+  const canEdit = IS_ADMIN(currentUser);
+  const showInc = IS_ADMIN(currentUser) && (name === 'stock' || name === 'incoming');
+  const showSale = CAN_SALE(currentUser) && (name === 'stock' || name === 'sales');
   const mIn = document.getElementById('mobileBtnIncoming');
   const mSale = document.getElementById('mobileBtnSale');
   if (mIn)   mIn.style.display   = showInc  ? '' : 'none';
@@ -1031,7 +1037,7 @@ function renderStock() {
   updateSortArrows('stock', ['name','qty','price','total','date','comment']);
   const tbody = document.getElementById('bodyStock');
   if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Нет данных</td></tr>'; return; }
-  const canEdit = CAN_EDIT(currentUser);
+  const canEdit = IS_ADMIN(currentUser);
   if (isMobile()) {
     const wrap = document.getElementById('bodyStock').closest('.table-wrap');
     wrap.style.display = 'block';
@@ -1212,7 +1218,7 @@ function renderAll() {
 
 // ── MODALS ──
 function openIncoming() {
-  if (!CAN_EDIT(currentUser)) return;
+  if (!IS_ADMIN(currentUser)) return;
   document.getElementById('inDate').value = todayStr();
   ['inName','inQty','inPrice','inComment'].forEach(id => { document.getElementById(id).value = ''; });
   clearErrors('In');
@@ -1220,7 +1226,7 @@ function openIncoming() {
   setTimeout(() => document.getElementById('inName').focus(), 150);
 }
 function openSale() {
-  if (!CAN_EDIT(currentUser)) return;
+  if (!CAN_SALE(currentUser)) return;
   document.getElementById('saleDate').value = todayStr();
   ['saleName','saleQty','salePrice','saleComment'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('saleStock').textContent = '—';
@@ -1244,7 +1250,7 @@ function fillSalePrice() {
 }
 
 async function submitIncoming() {
-  if (!CAN_EDIT(currentUser)) return;
+  if (!IS_ADMIN(currentUser)) return;
   const date    = document.getElementById('inDate').value;
   const name    = document.getElementById('inName').value.trim();
   const qty     = parseInt(document.getElementById('inQty').value);
@@ -1276,7 +1282,7 @@ async function submitIncoming() {
 }
 
 async function submitSale() {
-  if (!CAN_EDIT(currentUser)) return;
+  if (!CAN_SALE(currentUser)) return;
   const date    = document.getElementById('saleDate').value;
   const name    = document.getElementById('saleName').value;
   const qty     = parseInt(document.getElementById('saleQty').value);
@@ -1354,7 +1360,7 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
 let editingStockId = null;
 
 function openEditStock(stockId) {
-  if (!CAN_EDIT(currentUser)) return;
+  if (!IS_ADMIN(currentUser)) return;
   const item = stock.find(r => String(r.id) === String(stockId));
   if (!item) return;
   editingStockId = stockId;
@@ -1369,7 +1375,7 @@ function openEditStock(stockId) {
 }
 
 async function submitEditStock() {
-  if (!CAN_EDIT(currentUser)) return;
+  if (!IS_ADMIN(currentUser)) return;
   const qty     = parseInt(document.getElementById('editQty').value);
   const price   = parseFloat(document.getElementById('editPrice').value);
   const comment = document.getElementById('editComment').value.trim();
