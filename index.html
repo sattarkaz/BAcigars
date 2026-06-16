@@ -286,18 +286,28 @@
   /* ── MOBILE ── */
   @media (max-width: 639px) {
     .dashboard { grid-template-columns: 1fr 1fr; gap: 10px; }
-    .stat-card .value { font-size: 20px; }
     .user-badge .urole { display: none; }
     header h1 { font-size: 14px; }
-    .toolbar { gap: 8px; }
-    .search-input { width: 100%; order: 10; }
     .toolbar .btn { flex: 1; }
     .filters { gap: 6px; }
     .filter-date { font-size: 11px; padding: 6px 8px; }
     .modal-actions .btn { padding: 12px; font-size: 14px; }
 
-    /* Скрыть кнопки в toolbar на мобиле — они в нижней панели */
-    #btnAddIncoming, #btnAddSale, #btnAddIncoming2, #btnAddSale2 { display: none !important; }
+    /* Dashboard: 3 карточки в одну строку, скрыть "последнее обновление" */
+    .dashboard { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .dashboard .stat-card:last-child { display: none; }
+    .stat-card { padding: 10px 10px; }
+    .stat-card .label { font-size: 9px; letter-spacing: 0.5px; }
+    .stat-card .value { font-size: 16px; }
+    .stat-card .sub { font-size: 10px; }
+
+    /* Кнопки поступление/продажа компактно в одну строку */
+    .toolbar { flex-wrap: nowrap; gap: 6px; }
+    .toolbar h2 { display: none; }
+    #btnAddIncoming, #btnAddSale, #btnAddIncoming2, #btnAddSale2 {
+      padding: 8px 10px; font-size: 12px; flex: 1; white-space: nowrap;
+    }
+    .search-input { order: 10; width: 100%; }
 
     /* Нижняя панель кнопок */
     .mobile-fab-bar {
