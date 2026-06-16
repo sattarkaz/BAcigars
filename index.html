@@ -1014,6 +1014,8 @@ function updateDashboard() {
 }
 
 // ── RENDER STOCK ──
+const isMobile = () => window.innerWidth < 640;
+
 function renderStock() {
   const search = document.getElementById('searchStock').value.trim().toLowerCase();
   const status = document.getElementById('filterStockStatus').value;
@@ -1024,20 +1026,32 @@ function renderStock() {
   if (status === 'out') data = data.filter(r => r.qty === 0);
   updateSortArrows('stock', ['name','qty','price','total','date','comment']);
   const tbody = document.getElementById('bodyStock');
-  if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет данных</td></tr>'; return; }
+  if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Нет данных</td></tr>'; return; }
   const canEdit = CAN_EDIT(currentUser);
-  tbody.innerHTML = data.map(r => {
-    const qc = r.qty === 0 ? 'badge-out' : r.qty < 5 ? 'badge-low' : '';
-    return `<tr>
-      <td class="td-name">${esc(r.name)}</td>
-      <td class="td-qty ${qc}">${r.qty}</td>
-      <td class="td-price">${formatNum(r.price)}</td>
-      <td class="td-total">${formatNum(r.qty*r.price)}</td>
-      <td class="td-date">${formatDate(r.date)}</td>
-      <td class="td-comment" style="${(!r.comment || r.comment === '—') ? 'display:none' : ''}">${esc(r.comment||'')}</td>
-      <td>${canEdit ? `<button class="btn-edit" onclick="openEditStock('${r.id}')">✏️ Изменить</button>` : ''}</td>
-    </tr>`;
-  }).join('');
+  if (isMobile()) {
+    tbody.innerHTML = data.map(r => {
+      const qc = r.qty === 0 ? 'color:#c0392b;font-weight:700' : r.qty < 5 ? 'color:#e67e22;font-weight:700' : 'color:var(--gold2);font-weight:700';
+      return `<tr style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+        <td style="flex:1;font-size:14px;font-weight:700;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;padding:0;border:none;">${esc(r.name)}</td>
+        <td style="${qc};font-size:17px;flex-shrink:0;padding:0;border:none;">${r.qty}</td>
+        <td style="display:none"></td><td style="display:none"></td><td style="display:none"></td><td style="display:none"></td>
+        <td style="flex-shrink:0;padding:0;border:none;">${canEdit ? `<button class="btn-edit" onclick="openEditStock('${r.id}')" style="padding:5px 8px;font-size:11px;">✏️</button>` : ''}</td>
+      </tr>`;
+    }).join('');
+  } else {
+    tbody.innerHTML = data.map(r => {
+      const qc = r.qty === 0 ? 'badge-out' : r.qty < 5 ? 'badge-low' : '';
+      return `<tr>
+        <td class="td-name">${esc(r.name)}</td>
+        <td class="td-qty ${qc}">${r.qty}</td>
+        <td class="td-price">${formatNum(r.price)}</td>
+        <td class="td-total">${formatNum(r.qty*r.price)}</td>
+        <td class="td-date">${formatDate(r.date)}</td>
+        <td class="td-comment" style="${(!r.comment || r.comment === '—') ? 'display:none' : ''}">${esc(r.comment||'')}</td>
+        <td>${canEdit ? `<button class="btn-edit" onclick="openEditStock('${r.id}')">✏️ Изменить</button>` : ''}</td>
+      </tr>`;
+    }).join('');
+  }
 }
 function clearStockFilter() {
   document.getElementById('filterStockStatus').value = 'ok';
@@ -1059,14 +1073,26 @@ function renderIncoming() {
   updateSortArrows('incoming',['date','name','qty','price','total']);
   const tbody = document.getElementById('bodyIncoming');
   if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет поступлений</td></tr>'; return; }
-  tbody.innerHTML = data.map(r => `<tr>
-    <td class="td-date">${formatDate(r.date)}</td>
-    <td class="td-name">${esc(r.name)}</td>
-    <td class="td-qty">${r.qty}</td>
-    <td class="td-price">${formatNum(r.price)}</td>
-    <td class="td-total">${formatNum(r.total)}</td>
-    <td class="td-comment">${esc(r.comment||'—')}</td>
-  </tr>`).join('');
+  if (isMobile()) {
+    tbody.innerHTML = data.map(r => `
+      <tr style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+        <td style="flex:1;min-width:0;padding:0;border:none;">
+          <div style="font-size:14px;font-weight:700;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(r.name)}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px;">${formatDate(r.date)}</div>
+        </td>
+        <td style="flex-shrink:0;font-size:16px;font-weight:700;color:var(--gold2);padding:0;border:none;">${r.qty} шт.</td>
+        <td style="flex-shrink:0;font-size:13px;color:#7bd99c;font-weight:600;padding:0;border:none;">${formatNum(r.total)} ₼</td>
+      </tr>`).join('');
+  } else {
+    tbody.innerHTML = data.map(r => `<tr>
+      <td class="td-date">${formatDate(r.date)}</td>
+      <td class="td-name">${esc(r.name)}</td>
+      <td class="td-qty">${r.qty}</td>
+      <td class="td-price">${formatNum(r.price)}</td>
+      <td class="td-total">${formatNum(r.total)}</td>
+      <td class="td-comment">${esc(r.comment||'—')}</td>
+    </tr>`).join('');
+  }
 }
 function clearIncomingFilter() {
   ['filterIncomingName','filterIncomingDateFrom','filterIncomingDateTo','searchIncoming'].forEach(id => { document.getElementById(id).value = ''; });
@@ -1087,17 +1113,29 @@ function renderSales() {
   updateSortArrows('sales',['date','name','qty','price','total']);
   const tbody = document.getElementById('bodySales');
   const canRollback = CAN_EDIT(currentUser);
-  const colCount = canRollback ? 7 : 6;
-  if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="${colCount}">Нет продаж</td></tr>`; return; }
-  tbody.innerHTML = data.map(r => `<tr>
-    <td class="td-date">${formatDate(r.date)}</td>
-    <td class="td-name">${esc(r.name)}</td>
-    <td class="td-qty" style="color:#e67e22">${r.qty}</td>
-    <td class="td-price">${formatNum(r.price)}</td>
-    <td class="td-total" style="color:#e8c97e">${formatNum(r.total)}</td>
-    <td class="td-comment">${esc(r.comment||'—')}</td>
-    ${canRollback ? `<td><button class="btn-rollback" onclick="askRollback('${r.id}')">↩ Откат</button></td>` : ''}
-  </tr>`).join('');
+  if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Нет продаж</td></tr>`; return; }
+  if (isMobile()) {
+    tbody.innerHTML = data.map(r => `
+      <tr style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+        <td style="flex:1;min-width:0;padding:0;border:none;">
+          <div style="font-size:14px;font-weight:700;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(r.name)}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px;">${formatDate(r.date)}</div>
+        </td>
+        <td style="flex-shrink:0;font-size:16px;font-weight:700;color:#e67e22;padding:0;border:none;">${r.qty} шт.</td>
+        <td style="flex-shrink:0;font-size:13px;color:#e8c97e;font-weight:600;padding:0;border:none;">${formatNum(r.total)} ₼</td>
+        ${canRollback ? `<td style="flex-shrink:0;padding:0;border:none;"><button class="btn-rollback" onclick="askRollback('${r.id}')" style="padding:5px 7px;font-size:12px;">↩</button></td>` : ''}
+      </tr>`).join('');
+  } else {
+    tbody.innerHTML = data.map(r => `<tr>
+      <td class="td-date">${formatDate(r.date)}</td>
+      <td class="td-name">${esc(r.name)}</td>
+      <td class="td-qty" style="color:#e67e22">${r.qty}</td>
+      <td class="td-price">${formatNum(r.price)}</td>
+      <td class="td-total" style="color:#e8c97e">${formatNum(r.total)}</td>
+      <td class="td-comment">${esc(r.comment||'—')}</td>
+      ${canRollback ? `<td><button class="btn-rollback" onclick="askRollback('${r.id}')">↩ Откат</button></td>` : ''}
+    </tr>`).join('');
+  }
 }
 function clearSalesFilter() {
   ['filterSalesName','filterSalesDateFrom','filterSalesDateTo','searchSales'].forEach(id => { document.getElementById(id).value = ''; });
