@@ -353,37 +353,40 @@
       overflow: hidden;
     }
     tbody tr:hover { background: rgba(201,168,76,0.06); }
-    tbody td { padding: 0; border: none; font-size: 13px; flex-shrink: 0; min-width: 0; }
+    tbody td { padding: 0; border: none; font-size: 13px; }
 
     /* СКЛАД: [название flex] [кол-во] [кнопка] */
-    #bodyStock tr { display: flex; align-items: center; gap: 8px; }
-    #bodyStock tr td:nth-child(1) { flex: 1; font-size: 13px; font-weight: 700; color: var(--gold2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-    #bodyStock tr td:nth-child(2) { font-size: 16px; font-weight: 700; flex-shrink: 0; min-width: 28px; text-align: right; }
-    #bodyStock tr td:nth-child(3) { display: none; }
-    #bodyStock tr td:nth-child(4) { display: none; }
-    #bodyStock tr td:nth-child(5) { display: none; }
-    #bodyStock tr td:nth-child(6) { display: none; }
-    #bodyStock tr td:nth-child(7) { flex-shrink: 0; }
+    #bodyStock tr { display: flex !important; align-items: center; gap: 8px; }
+    #bodyStock tr td { display: block !important; flex-shrink: 0; }
+    #bodyStock tr td:nth-child(1) { display: block !important; flex: 1 !important; font-size: 13px; font-weight: 700; color: var(--gold2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    #bodyStock tr td:nth-child(2) { display: block !important; font-size: 16px; font-weight: 700; min-width: 28px; text-align: right; }
+    #bodyStock tr td:nth-child(3) { display: none !important; }
+    #bodyStock tr td:nth-child(4) { display: none !important; }
+    #bodyStock tr td:nth-child(5) { display: none !important; }
+    #bodyStock tr td:nth-child(6) { display: none !important; }
+    #bodyStock tr td:nth-child(7) { display: block !important; }
     #bodyStock tr td:nth-child(7) .btn-edit { padding: 5px 8px; font-size: 11px; white-space: nowrap; }
 
-    /* ПОСТУПЛЕНИЯ: [название+дата flex] [кол-во] [сумма] */
-    #bodyIncoming tr { display: flex; align-items: center; gap: 8px; }
-    #bodyIncoming tr td:nth-child(1) { font-size: 10px; color: var(--text2); order: 2; flex-shrink: 0; }
-    #bodyIncoming tr td:nth-child(2) { flex: 1; font-size: 13px; font-weight: 700; color: var(--gold2); order: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-    #bodyIncoming tr td:nth-child(3) { font-size: 15px; font-weight: 700; order: 3; flex-shrink: 0; min-width: 24px; text-align: right; }
-    #bodyIncoming tr td:nth-child(4) { display: none; }
-    #bodyIncoming tr td:nth-child(5) { font-size: 12px; color: #7bd99c; font-weight: 600; order: 4; flex-shrink: 0; }
-    #bodyIncoming tr td:nth-child(6) { display: none; }
+    /* ПОСТУПЛЕНИЯ */
+    #bodyIncoming tr { display: flex !important; align-items: center; gap: 8px; }
+    #bodyIncoming tr td { display: block !important; flex-shrink: 0; }
+    #bodyIncoming tr td:nth-child(1) { display: block !important; font-size: 10px; color: var(--text2); order: 2; }
+    #bodyIncoming tr td:nth-child(2) { display: block !important; flex: 1 !important; font-size: 13px; font-weight: 700; color: var(--gold2); order: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    #bodyIncoming tr td:nth-child(3) { display: block !important; font-size: 15px; font-weight: 700; order: 3; min-width: 24px; text-align: right; }
+    #bodyIncoming tr td:nth-child(4) { display: none !important; }
+    #bodyIncoming tr td:nth-child(5) { display: block !important; font-size: 12px; color: #7bd99c; font-weight: 600; order: 4; }
+    #bodyIncoming tr td:nth-child(6) { display: none !important; }
 
-    /* ПРОДАЖИ: [название flex] [кол-во] [сумма] [откат] */
-    #bodySales tr { display: flex; align-items: center; gap: 8px; }
-    #bodySales tr td:nth-child(1) { font-size: 10px; color: var(--text2); order: 2; flex-shrink: 0; }
-    #bodySales tr td:nth-child(2) { flex: 1; font-size: 13px; font-weight: 700; color: var(--gold2); order: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-    #bodySales tr td:nth-child(3) { font-size: 15px; font-weight: 700; color: #e67e22; order: 3; flex-shrink: 0; }
-    #bodySales tr td:nth-child(4) { display: none; }
-    #bodySales tr td:nth-child(5) { font-size: 12px; color: #e8c97e; font-weight: 600; order: 4; flex-shrink: 0; }
-    #bodySales tr td:nth-child(6) { display: none; }
-    #bodySales tr td:nth-child(7) { order: 5; flex-shrink: 0; }
+    /* ПРОДАЖИ */
+    #bodySales tr { display: flex !important; align-items: center; gap: 8px; }
+    #bodySales tr td { display: block !important; flex-shrink: 0; }
+    #bodySales tr td:nth-child(1) { display: block !important; font-size: 10px; color: var(--text2); order: 2; }
+    #bodySales tr td:nth-child(2) { display: block !important; flex: 1 !important; font-size: 13px; font-weight: 700; color: var(--gold2); order: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    #bodySales tr td:nth-child(3) { display: block !important; font-size: 15px; font-weight: 700; color: #e67e22; order: 3; }
+    #bodySales tr td:nth-child(4) { display: none !important; }
+    #bodySales tr td:nth-child(5) { display: block !important; font-size: 12px; color: #e8c97e; font-weight: 600; order: 4; }
+    #bodySales tr td:nth-child(6) { display: none !important; }
+    #bodySales tr td:nth-child(7) { display: block !important; order: 5; }
     #bodySales tr td:nth-child(7) .btn-rollback { padding: 5px 7px; font-size: 11px; }
 
     .empty-row { display: block !important; }
