@@ -1016,6 +1016,10 @@ function updateDashboard() {
 // ── RENDER STOCK ──
 const isMobile = () => window.innerWidth < 640;
 
+const cardStyle = 'display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;width:100%;box-sizing:border-box;';
+const nameStyle = 'flex:1;font-size:14px;font-weight:700;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;padding:0;border:none;';
+const tdStyle   = 'flex-shrink:0;padding:0;border:none;';
+
 function renderStock() {
   const search = document.getElementById('searchStock').value.trim().toLowerCase();
   const status = document.getElementById('filterStockStatus').value;
@@ -1029,14 +1033,26 @@ function renderStock() {
   if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Нет данных</td></tr>'; return; }
   const canEdit = CAN_EDIT(currentUser);
   if (isMobile()) {
-    tbody.innerHTML = data.map(r => {
-      const qc = r.qty === 0 ? 'color:#c0392b;font-weight:700' : r.qty < 5 ? 'color:#e67e22;font-weight:700' : 'color:var(--gold2);font-weight:700';
-      return `<tr style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
-        <td style="flex:1;font-size:14px;font-weight:700;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;padding:0;border:none;">${esc(r.name)}</td>
-        <td style="${qc};font-size:17px;flex-shrink:0;padding:0;border:none;">${r.qty}</td>
-        <td style="display:none"></td><td style="display:none"></td><td style="display:none"></td><td style="display:none"></td>
-        <td style="flex-shrink:0;padding:0;border:none;">${canEdit ? `<button class="btn-edit" onclick="openEditStock('${r.id}')" style="padding:5px 8px;font-size:11px;">✏️</button>` : ''}</td>
-      </tr>`;
+    const wrap = document.getElementById('bodyStock').closest('.table-wrap');
+    wrap.style.display = 'block';
+    const container = wrap.querySelector('table') || wrap;
+    // Replace table with divs
+    const tableEl = wrap.querySelector('table');
+    let mobileDiv = wrap.querySelector('.mobile-cards');
+    if (!mobileDiv) {
+      mobileDiv = document.createElement('div');
+      mobileDiv.className = 'mobile-cards';
+      wrap.insertBefore(mobileDiv, tableEl);
+    }
+    tableEl.style.display = 'none';
+    mobileDiv.innerHTML = data.map(r => {
+      const qc = r.qty === 0 ? '#c0392b' : r.qty < 5 ? '#e67e22' : 'var(--gold2)';
+      const btn = canEdit ? `<button class="btn-edit" onclick="openEditStock('${r.id}')" style="padding:5px 10px;font-size:12px;">✏️</button>` : '';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+        <span style="flex:1;font-size:14px;font-weight:700;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">${esc(r.name)}</span>
+        <span style="flex-shrink:0;font-size:18px;font-weight:700;color:${qc};">${r.qty}</span>
+        ${btn}
+      </div>`;
     }).join('');
   } else {
     tbody.innerHTML = data.map(r => {
@@ -1074,15 +1090,20 @@ function renderIncoming() {
   const tbody = document.getElementById('bodyIncoming');
   if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет поступлений</td></tr>'; return; }
   if (isMobile()) {
-    tbody.innerHTML = data.map(r => `
-      <tr style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
-        <td style="flex:1;min-width:0;padding:0;border:none;">
+    const wrap2 = document.getElementById('bodyIncoming').closest('.table-wrap');
+    const tbl2 = wrap2.querySelector('table');
+    let md2 = wrap2.querySelector('.mobile-cards');
+    if (!md2) { md2 = document.createElement('div'); md2.className = 'mobile-cards'; wrap2.insertBefore(md2, tbl2); }
+    tbl2.style.display = 'none';
+    md2.innerHTML = data.map(r => `
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+        <div style="flex:1;min-width:0;">
           <div style="font-size:14px;font-weight:700;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(r.name)}</div>
           <div style="font-size:11px;color:var(--text2);margin-top:2px;">${formatDate(r.date)}</div>
-        </td>
-        <td style="flex-shrink:0;font-size:16px;font-weight:700;color:var(--gold2);padding:0;border:none;">${r.qty} шт.</td>
-        <td style="flex-shrink:0;font-size:13px;color:#7bd99c;font-weight:600;padding:0;border:none;">${formatNum(r.total)} ₼</td>
-      </tr>`).join('');
+        </div>
+        <span style="flex-shrink:0;font-size:16px;font-weight:700;color:var(--gold2);">${r.qty} шт.</span>
+        <span style="flex-shrink:0;font-size:13px;color:#7bd99c;font-weight:600;">${formatNum(r.total)} ₼</span>
+      </div>`).join('');
   } else {
     tbody.innerHTML = data.map(r => `<tr>
       <td class="td-date">${formatDate(r.date)}</td>
@@ -1115,16 +1136,21 @@ function renderSales() {
   const canRollback = CAN_EDIT(currentUser);
   if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Нет продаж</td></tr>`; return; }
   if (isMobile()) {
-    tbody.innerHTML = data.map(r => `
-      <tr style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
-        <td style="flex:1;min-width:0;padding:0;border:none;">
+    const wrap3 = document.getElementById('bodySales').closest('.table-wrap');
+    const tbl3 = wrap3.querySelector('table');
+    let md3 = wrap3.querySelector('.mobile-cards');
+    if (!md3) { md3 = document.createElement('div'); md3.className = 'mobile-cards'; wrap3.insertBefore(md3, tbl3); }
+    tbl3.style.display = 'none';
+    md3.innerHTML = data.map(r => `
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+        <div style="flex:1;min-width:0;">
           <div style="font-size:14px;font-weight:700;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(r.name)}</div>
           <div style="font-size:11px;color:var(--text2);margin-top:2px;">${formatDate(r.date)}</div>
-        </td>
-        <td style="flex-shrink:0;font-size:16px;font-weight:700;color:#e67e22;padding:0;border:none;">${r.qty} шт.</td>
-        <td style="flex-shrink:0;font-size:13px;color:#e8c97e;font-weight:600;padding:0;border:none;">${formatNum(r.total)} ₼</td>
-        ${canRollback ? `<td style="flex-shrink:0;padding:0;border:none;"><button class="btn-rollback" onclick="askRollback('${r.id}')" style="padding:5px 7px;font-size:12px;">↩</button></td>` : ''}
-      </tr>`).join('');
+        </div>
+        <span style="flex-shrink:0;font-size:16px;font-weight:700;color:#e67e22;">${r.qty} шт.</span>
+        <span style="flex-shrink:0;font-size:13px;color:#e8c97e;font-weight:600;">${formatNum(r.total)} ₼</span>
+        ${canRollback ? `<button class="btn-rollback" onclick="askRollback('${r.id}')" style="flex-shrink:0;padding:5px 8px;font-size:12px;">↩</button>` : ''}
+      </div>`).join('');
   } else {
     tbody.innerHTML = data.map(r => `<tr>
       <td class="td-date">${formatDate(r.date)}</td>
