@@ -305,7 +305,7 @@
     .toolbar { flex-wrap: nowrap; gap: 6px; }
     .toolbar h2 { display: none; }
     #btnAddIncoming, #btnAddSale, #btnAddIncoming2, #btnAddSale2 {
-      padding: 8px 10px; font-size: 12px; flex: 1; white-space: nowrap;
+      display: none !important;
     }
     .search-input { order: 10; width: 100%; }
 
@@ -320,50 +320,54 @@
     .mobile-fab-bar .btn { flex: 1; padding: 13px; font-size: 14px; }
     body { padding-bottom: 80px; }
 
-    /* Карточный вид таблиц */
+    /* Карточный вид таблиц — компактный */
     .table-wrap { overflow-x: unset; }
     table, thead, tbody, th, td, tr { display: block; }
     thead { display: none; }
     tbody tr {
       background: var(--bg2); border: 1px solid var(--border);
-      border-radius: 10px; margin-bottom: 10px; padding: 12px 14px;
+      border-radius: 10px; margin-bottom: 8px; padding: 10px 12px;
       display: grid; grid-template-columns: 1fr 1fr;
-      gap: 6px 10px; position: relative;
+      gap: 4px 10px;
     }
     tbody tr:hover { background: rgba(201,168,76,0.06); }
     tbody td { padding: 0; border: none; font-size: 13px; }
     tbody td::before {
-      display: block; font-size: 10px; color: var(--text2);
-      text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 2px;
+      display: block; font-size: 9px; color: var(--text2);
+      text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 1px;
     }
-    /* Stock table */
-    #bodyStock tr td:nth-child(1) { grid-column: 1 / -1; }
-    #bodyStock tr td:nth-child(1)::before { content: 'Наименование'; }
-    #bodyStock tr td:nth-child(2)::before { content: 'Количество'; }
+
+    /* Stock cards */
+    #bodyStock tr td:nth-child(1) { grid-column: 1 / -1; font-size: 15px; font-weight: 700; color: var(--gold2); }
+    #bodyStock tr td:nth-child(1)::before { content: none; }
+    #bodyStock tr td:nth-child(2)::before { content: 'Кол-во'; }
     #bodyStock tr td:nth-child(3)::before { content: 'Цена, AZN'; }
     #bodyStock tr td:nth-child(4)::before { content: 'Сумма, AZN'; }
     #bodyStock tr td:nth-child(5)::before { content: 'Изменено'; }
-    #bodyStock tr td:nth-child(6)::before { content: 'Комментарий'; }
-    #bodyStock tr td:nth-child(7) { grid-column: 1 / -1; margin-top: 4px; }
-    /* Incoming table */
+    #bodyStock tr td:nth-child(6) { grid-column: 1 / -1; font-style: italic; color: var(--text2); font-size: 12px; }
+    #bodyStock tr td:nth-child(6)::before { content: none; }
+    #bodyStock tr td:nth-child(7) { grid-column: 1 / -1; margin-top: 2px; }
+    #bodyStock tr td:nth-child(7)::before { content: none; }
+    /* Incoming cards */
     #bodyIncoming tr td:nth-child(1)::before { content: 'Дата'; }
-    #bodyIncoming tr td:nth-child(2) { grid-column: 1 / -1; }
-    #bodyIncoming tr td:nth-child(2)::before { content: 'Наименование'; }
-    #bodyIncoming tr td:nth-child(3)::before { content: 'Количество'; }
+    #bodyIncoming tr td:nth-child(2) { grid-column: 1 / -1; font-size: 15px; font-weight: 700; color: var(--gold2); }
+    #bodyIncoming tr td:nth-child(2)::before { content: none; }
+    #bodyIncoming tr td:nth-child(3)::before { content: 'Кол-во'; }
     #bodyIncoming tr td:nth-child(4)::before { content: 'Цена, AZN'; }
     #bodyIncoming tr td:nth-child(5)::before { content: 'Сумма, AZN'; }
-    #bodyIncoming tr td:nth-child(6) { grid-column: 1 / -1; }
-    #bodyIncoming tr td:nth-child(6)::before { content: 'Комментарий'; }
-    /* Sales table */
+    #bodyIncoming tr td:nth-child(6) { grid-column: 1 / -1; font-style: italic; color: var(--text2); font-size: 12px; }
+    #bodyIncoming tr td:nth-child(6)::before { content: none; }
+    /* Sales cards */
     #bodySales tr td:nth-child(1)::before { content: 'Дата'; }
-    #bodySales tr td:nth-child(2) { grid-column: 1 / -1; }
-    #bodySales tr td:nth-child(2)::before { content: 'Наименование'; }
-    #bodySales tr td:nth-child(3)::before { content: 'Количество'; }
+    #bodySales tr td:nth-child(2) { grid-column: 1 / -1; font-size: 15px; font-weight: 700; color: var(--gold2); }
+    #bodySales tr td:nth-child(2)::before { content: none; }
+    #bodySales tr td:nth-child(3)::before { content: 'Кол-во'; }
     #bodySales tr td:nth-child(4)::before { content: 'Цена, AZN'; }
     #bodySales tr td:nth-child(5)::before { content: 'Сумма, AZN'; }
-    #bodySales tr td:nth-child(6) { grid-column: 1 / -1; }
-    #bodySales tr td:nth-child(6)::before { content: 'Комментарий'; }
-    #bodySales tr td:nth-child(7) { grid-column: 1 / -1; margin-top: 4px; }
+    #bodySales tr td:nth-child(6) { grid-column: 1 / -1; font-style: italic; color: var(--text2); font-size: 12px; }
+    #bodySales tr td:nth-child(6)::before { content: none; }
+    #bodySales tr td:nth-child(7) { grid-column: 1 / -1; margin-top: 2px; }
+    #bodySales tr td:nth-child(7)::before { content: none; }
 
     .empty-row { display: block !important; }
     .empty-row td { display: block !important; text-align: center; padding: 24px; grid-column: unset; }
@@ -1018,7 +1022,7 @@ function renderStock() {
       <td class="td-price">${formatNum(r.price)}</td>
       <td class="td-total">${formatNum(r.qty*r.price)}</td>
       <td class="td-date">${formatDate(r.date)}</td>
-      <td class="td-comment">${esc(r.comment||'—')}</td>
+      <td class="td-comment" style="${(!r.comment || r.comment === '—') ? 'display:none' : ''}">${esc(r.comment||'')}</td>
       <td>${canEdit ? `<button class="btn-edit" onclick="openEditStock('${r.id}')">✏️ Изменить</button>` : ''}</td>
     </tr>`;
   }).join('');
