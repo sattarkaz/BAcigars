@@ -603,6 +603,7 @@
             <th onclick="sortTable('sales','price')">Цена, AZN <span class="sort-arrow">↕</span></th>
             <th onclick="sortTable('sales','total')">Сумма, AZN <span class="sort-arrow">↕</span></th>
             <th>Комментарий</th>
+            <th id="thSellerCol" style="display:none">Продавец</th>
             <th id="thAction" style="width:80px"></th>
           </tr></thead>
           <tbody id="bodySales"></tbody>
@@ -954,7 +955,7 @@ async function dbInsertIncoming(record) {
 }
 
 async function dbInsertSale(record) {
-  const payload = { id: Date.now(), date: record.date, name: record.name, qty: record.qty, price: record.price, total: record.total, comment: record.comment || '' };
+  const payload = { id: Date.now(), date: record.date, name: record.name, qty: record.qty, price: record.price, total: record.total, comment: record.comment || '', seller: record.seller || '' };
   console.log('insertSale:', payload);
   const { error } = await db.from('sales').insert(payload);
   if (error) { console.error('insertSale error:', error); throw new Error(error.message || error.hint || JSON.stringify(error)); }
@@ -1141,7 +1142,11 @@ function renderSales() {
   updateSortArrows('sales',['date','name','qty','price','total']);
   const tbody = document.getElementById('bodySales');
   const canRollback = IS_ADMIN(currentUser);
-  if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Нет продаж</td></tr>`; return; }
+  const showSeller = IS_ADMIN(currentUser) && !isMobile();
+  // show/hide seller column header
+  const thSeller = document.getElementById('thSellerCol');
+  if (thSeller) thSeller.style.display = showSeller ? '' : 'none';
+  if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="8">Нет продаж</td></tr>`; return; }
   if (isMobile()) {
     const wrap3 = document.getElementById('bodySales').closest('.table-wrap');
     const tbl3 = wrap3.querySelector('table');
@@ -1166,6 +1171,7 @@ function renderSales() {
       <td class="td-price">${formatNum(r.price)}</td>
       <td class="td-total" style="color:#e8c97e">${formatNum(r.total)}</td>
       <td class="td-comment">${esc(r.comment||'—')}</td>
+      ${showSeller ? `<td class="td-comment" style="color:var(--gold2)">${esc(r.seller||'—')}</td>` : ''}
       ${canRollback ? `<td><button class="btn-rollback" onclick="askRollback('${r.id}')">↩ Откат</button></td>` : ''}
     </tr>`).join('');
   }
@@ -1305,7 +1311,7 @@ async function submitSale() {
   }
   showLoading(true);
   try {
-    await dbInsertSale({ date, name, qty, price, total: qty * price, comment });
+    await dbInsertSale({ date, name, qty, price, total: qty * price, comment, seller: currentUser.name });
     await dbUpsertStock({ name, qty: item.qty - qty, price: item.price, date });
     closeModal('modalSale');
     toast('Продажа оформлена: ' + name + ' ×' + qty, 'success');
