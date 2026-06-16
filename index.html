@@ -1134,7 +1134,7 @@ function renderSales() {
   if (dt) data = data.filter(r => r.date <= dt);
   updateSortArrows('sales',['date','name','qty','price','total']);
   const tbody = document.getElementById('bodySales');
-  const canRollback = CAN_EDIT(currentUser);
+  const canRollback = IS_ADMIN(currentUser);
   if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Нет продаж</td></tr>`; return; }
   if (isMobile()) {
     const wrap3 = document.getElementById('bodySales').closest('.table-wrap');
@@ -1409,7 +1409,7 @@ async function submitEditStock() {
 let pendingRollbackId = null;
 
 function askRollback(saleId) {
-  if (!CAN_EDIT(currentUser)) return;
+  if (!IS_ADMIN(currentUser)) return;
   const sale = sales.find(s => String(s.id) === String(saleId));
   if (!sale) return;
   pendingRollbackId = saleId;
