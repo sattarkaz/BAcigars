@@ -765,7 +765,7 @@
   <button class="btn btn-danger" id="mobileBtnSale" onclick="openSale()" style="display:none">− Продажа</button>
 </div>
 
-<div id="loadingOverlay"><div class="spinner"></div><div class="loading-text">Загрузка данных...</div></div>
+<div id="loadingOverlay" style="display:none"><div class="spinner"></div><div class="loading-text">Загрузка данных...</div></div>
 <div id="toast"></div>
 
 <script>
@@ -897,7 +897,7 @@ const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 let stock = [], incoming = [], sales = [];
 
 function showLoading(on) {
-  document.getElementById('loadingOverlay').classList.toggle('show', on);
+  document.getElementById('loadingOverlay').style.display = on ? 'flex' : 'none';
 }
 
 async function dbLoad() {
