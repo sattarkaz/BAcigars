@@ -793,7 +793,7 @@ const IS_ADMIN  = u => u && u.role === 'admin';
 
 // ── LOGIN ──
 async function doLogin() {
-  const login = document.getElementById('loginUser').value.trim();
+  const login = document.getElementById('loginUser').value.trim().toLowerCase();
   const pass  = document.getElementById('loginPass').value;
   const loginBtn = document.querySelector('.btn-login');
   loginBtn.textContent = 'Вход...';
@@ -1455,7 +1455,7 @@ document.getElementById('confirmOverlay').addEventListener('click', e => {
   if (session) {
     try {
       const s = JSON.parse(session);
-      const { data, error } = await db.from('users').select('*').eq('login', s.login).single();
+      const { data, error } = await db.from('users').select('*').eq('login', s.login.toLowerCase()).single();
       if (data && !error) { currentUser = data; startApp(); return; }
     } catch(e) {}
     localStorage.removeItem('cig_session');
