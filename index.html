@@ -176,7 +176,7 @@
 
   /* ── TABLE ── */
   .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 520px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 620px; }
   thead tr { border-bottom: 2px solid var(--gold); }
   thead th {
     text-align: left; padding: 9px 12px; color: var(--gold2);
@@ -294,9 +294,78 @@
     .toolbar .btn { flex: 1; }
     .filters { gap: 6px; }
     .filter-date { font-size: 11px; padding: 6px 8px; }
-    table { font-size: 12px; }
-    tbody td { padding: 8px 10px; }
     .modal-actions .btn { padding: 12px; font-size: 14px; }
+
+    /* Скрыть кнопки в toolbar на мобиле — они в нижней панели */
+    #btnAddIncoming, #btnAddSale, #btnAddIncoming2, #btnAddSale2 { display: none !important; }
+
+    /* Нижняя панель кнопок */
+    .mobile-fab-bar {
+      display: flex !important;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--bg2); border-top: 1px solid var(--gold);
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+      gap: 10px; z-index: 500;
+    }
+    .mobile-fab-bar .btn { flex: 1; padding: 13px; font-size: 14px; }
+    body { padding-bottom: 80px; }
+
+    /* Карточный вид таблиц */
+    .table-wrap { overflow-x: unset; }
+    table, thead, tbody, th, td, tr { display: block; }
+    thead { display: none; }
+    tbody tr {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; margin-bottom: 10px; padding: 12px 14px;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 6px 10px; position: relative;
+    }
+    tbody tr:hover { background: rgba(201,168,76,0.06); }
+    tbody td { padding: 0; border: none; font-size: 13px; }
+    tbody td::before {
+      display: block; font-size: 10px; color: var(--text2);
+      text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 2px;
+    }
+    /* Stock table */
+    #bodyStock tr td:nth-child(1) { grid-column: 1 / -1; }
+    #bodyStock tr td:nth-child(1)::before { content: 'Наименование'; }
+    #bodyStock tr td:nth-child(2)::before { content: 'Количество'; }
+    #bodyStock tr td:nth-child(3)::before { content: 'Цена, AZN'; }
+    #bodyStock tr td:nth-child(4)::before { content: 'Сумма, AZN'; }
+    #bodyStock tr td:nth-child(5)::before { content: 'Изменено'; }
+    #bodyStock tr td:nth-child(6)::before { content: 'Комментарий'; }
+    #bodyStock tr td:nth-child(7) { grid-column: 1 / -1; margin-top: 4px; }
+    /* Incoming table */
+    #bodyIncoming tr td:nth-child(1)::before { content: 'Дата'; }
+    #bodyIncoming tr td:nth-child(2) { grid-column: 1 / -1; }
+    #bodyIncoming tr td:nth-child(2)::before { content: 'Наименование'; }
+    #bodyIncoming tr td:nth-child(3)::before { content: 'Количество'; }
+    #bodyIncoming tr td:nth-child(4)::before { content: 'Цена, AZN'; }
+    #bodyIncoming tr td:nth-child(5)::before { content: 'Сумма, AZN'; }
+    #bodyIncoming tr td:nth-child(6) { grid-column: 1 / -1; }
+    #bodyIncoming tr td:nth-child(6)::before { content: 'Комментарий'; }
+    /* Sales table */
+    #bodySales tr td:nth-child(1)::before { content: 'Дата'; }
+    #bodySales tr td:nth-child(2) { grid-column: 1 / -1; }
+    #bodySales tr td:nth-child(2)::before { content: 'Наименование'; }
+    #bodySales tr td:nth-child(3)::before { content: 'Количество'; }
+    #bodySales tr td:nth-child(4)::before { content: 'Цена, AZN'; }
+    #bodySales tr td:nth-child(5)::before { content: 'Сумма, AZN'; }
+    #bodySales tr td:nth-child(6) { grid-column: 1 / -1; }
+    #bodySales tr td:nth-child(6)::before { content: 'Комментарий'; }
+    #bodySales tr td:nth-child(7) { grid-column: 1 / -1; margin-top: 4px; }
+
+    .empty-row { display: block !important; }
+    .empty-row td { display: block !important; text-align: center; padding: 24px; grid-column: unset; }
+    .empty-row td::before { display: none !important; }
+
+    /* Tabs — горизонтальный скролл с иконками */
+    .tabs { padding: 12px 12px 0; gap: 4px; }
+    .tab-btn { padding: 8px 14px; font-size: 12px; }
+
+    /* Main padding */
+    .main { margin: 0 10px 16px; padding: 14px 12px; }
+    .dashboard { padding: 12px 10px 0; }
   }
   @media (max-width: 380px) {
     .dashboard { grid-template-columns: 1fr 1fr; }
@@ -304,7 +373,8 @@
     .header-logo { width: 36px; height: 36px; }
   }
 
-  select option { background: #231a0d; color: #f0e6d3; }
+  /* Mobile FAB bar hidden on desktop */
+  .mobile-fab-bar { display: none; }
 
 
   /* ── EDIT STOCK ── */
@@ -445,6 +515,7 @@
             <th onclick="sortTable('stock','price')">Цена, AZN <span class="sort-arrow">↕</span></th>
             <th onclick="sortTable('stock','total')">Сумма, AZN <span class="sort-arrow">↕</span></th>
             <th onclick="sortTable('stock','date')">Изменено <span class="sort-arrow">↕</span></th>
+            <th>Комментарий</th>
             <th id="thStockAction" style="width:70px"></th>
           </tr></thead>
           <tbody id="bodyStock"></tbody>
@@ -662,6 +733,12 @@
   </div>
 </div>
 
+<!-- MOBILE BOTTOM ACTION BAR -->
+<div class="mobile-fab-bar" id="mobileFabBar">
+  <button class="btn btn-primary" id="mobileBtnIncoming" onclick="openIncoming()" style="display:none">+ Поступление</button>
+  <button class="btn btn-danger" id="mobileBtnSale" onclick="openSale()" style="display:none">− Продажа</button>
+</div>
+
 <div id="loadingOverlay"><div class="spinner"></div><div class="loading-text">Загрузка данных...</div></div>
 <div id="toast"></div>
 
@@ -750,6 +827,9 @@ function startApp() {
 
   dbLoad();
   if (IS_ADMIN(currentUser)) renderAdminPanel();
+  // init mobile FAB for default tab (stock)
+  switchTab('stock');
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
 }
 
 // ── ADMIN PANEL ──
@@ -825,6 +905,7 @@ async function dbLoad() {
 
 async function dbUpsertStock(item) {
   const payload = { name: item.name, qty: item.qty, price: item.price, date: item.date };
+  if (item.comment !== undefined) payload.comment = item.comment;
   console.log('upsertStock:', payload);
   const { data, error } = await db.from('stock')
     .upsert(payload, { onConflict: 'name' })
@@ -879,11 +960,20 @@ function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', tabOrder[i] === name));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
+
+  // Mobile FAB: show incoming on stock/incoming tabs, sale on stock/sales tabs
+  const canEdit = CAN_EDIT(currentUser);
+  const showInc = canEdit && (name === 'stock' || name === 'incoming');
+  const showSale = canEdit && (name === 'stock' || name === 'sales');
+  const mIn = document.getElementById('mobileBtnIncoming');
+  const mSale = document.getElementById('mobileBtnSale');
+  if (mIn)   mIn.style.display   = showInc  ? '' : 'none';
+  if (mSale) mSale.style.display = showSale ? '' : 'none';
 }
 
 // ── DASHBOARD ──
 function updateDashboard() {
-  document.getElementById('statItems').textContent = stock.length;
+  document.getElementById('statItems').textContent = stock.filter(r => r.qty > 0).length;
   document.getElementById('statQty').textContent   = stock.reduce((s,r) => s+r.qty, 0);
   document.getElementById('statValue').textContent = formatNum(stock.reduce((s,r) => s+r.qty*r.price, 0));
   const allOps = [...incoming,...sales];
@@ -906,7 +996,7 @@ function renderStock() {
   if (status === 'ok')  data = data.filter(r => r.qty >= 1);
   if (status === 'low') data = data.filter(r => r.qty > 0 && r.qty < 5);
   if (status === 'out') data = data.filter(r => r.qty === 0);
-  updateSortArrows('stock', ['name','qty','price','total','date']);
+  updateSortArrows('stock', ['name','qty','price','total','date','comment']);
   const tbody = document.getElementById('bodyStock');
   if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет данных</td></tr>'; return; }
   const canEdit = CAN_EDIT(currentUser);
@@ -918,6 +1008,7 @@ function renderStock() {
       <td class="td-price">${formatNum(r.price)}</td>
       <td class="td-total">${formatNum(r.qty*r.price)}</td>
       <td class="td-date">${formatDate(r.date)}</td>
+      <td class="td-comment">${esc(r.comment||'—')}</td>
       <td>${canEdit ? `<button class="btn-edit" onclick="openEditStock('${r.id}')">✏️ Изменить</button>` : ''}</td>
     </tr>`;
   }).join('');
@@ -1079,7 +1170,7 @@ async function submitIncoming() {
     await dbInsertIncoming({ date, name, qty, price, total: qty*price, comment });
     const ex = stock.find(r => r.name === name);
     const newQty = ex ? ex.qty + qty : qty;
-    await dbUpsertStock({ name, qty: newQty, price, date });
+    await dbUpsertStock({ name, qty: newQty, price, date, comment });
     closeModal('modalIncoming');
     toast('Поступление добавлено: ' + name + ' ×' + qty, 'success');
     await dbLoad();
