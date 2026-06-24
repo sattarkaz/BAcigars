@@ -1280,12 +1280,24 @@ function setGuestMode(isGuest) {
   updateGuestPrice();
 }
 
+const GUEST_MARKUP_DATE = '2026-06-16'; // наценка для гостей начиная с этой даты
+
+function isGuestMarkupApplicable() {
+  const name = document.getElementById('saleName').value;
+  const item = stock.find(r => r.name === name);
+  return item && item.date >= GUEST_MARKUP_DATE;
+}
+
 function updateGuestPrice() {
   const basePrice = parseFloat(document.getElementById('salePrice').value);
   const info = document.getElementById('guestPriceInfo');
-  if (saleIsGuest && basePrice > 0) {
+  const applicable = isGuestMarkupApplicable();
+  if (saleIsGuest && basePrice > 0 && applicable) {
     const guestPrice = Math.ceil(basePrice * 1.2);
     document.getElementById('guestPriceVal').textContent = guestPrice + ',00 AZN';
+    info.style.display = '';
+  } else if (saleIsGuest && !applicable) {
+    document.getElementById('guestPriceVal').textContent = 'без наценки (старый сток)';
     info.style.display = '';
   } else {
     info.style.display = 'none';
@@ -1340,7 +1352,8 @@ async function submitSale() {
   const basePrice = parseFloat(document.getElementById('salePrice').value);
   const comment = document.getElementById('saleComment').value.trim();
   const guest   = saleIsGuest;
-  const price   = guest ? Math.ceil(basePrice * 1.2) : basePrice;
+  const applicable = isGuestMarkupApplicable();
+  const price   = (guest && applicable) ? Math.ceil(basePrice * 1.2) : basePrice;
   clearErrors('Sale');
   let ok = true;
   if (!name)              { showErr('saleName',  'errSaleName');  ok = false; }
