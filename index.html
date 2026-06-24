@@ -604,6 +604,7 @@
             <th onclick="sortTable('sales','total')">Сумма, AZN <span class="sort-arrow">↕</span></th>
             <th>Комментарий</th>
             <th id="thSellerCol" style="display:none">Продавец</th>
+            <th id="thGuestCol" style="display:none">Покупатель</th>
             <th id="thAction" style="width:80px"></th>
           </tr></thead>
           <tbody id="bodySales"></tbody>
@@ -701,12 +702,29 @@
     </div>
     <div class="form-group">
       <label>Цена за штуку, AZN *</label>
-      <input type="number" id="salePrice" min="0.01" step="0.01" inputmode="decimal" placeholder="Цена продажи"/>
+      <input type="number" id="salePrice" min="0.01" step="0.01" inputmode="decimal" placeholder="Цена продажи" oninput="updateGuestPrice()"/>
       <div class="err-msg" id="errSalePrice">Введите цену > 0</div>
     </div>
     <div class="form-group">
       <label>Комментарий</label>
       <input type="text" id="saleComment" placeholder="Необязательно"/>
+    </div>
+    <div class="form-group">
+      <label>Тип покупателя</label>
+      <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <button type="button" id="btnMember" onclick="setGuestMode(false)"
+          style="flex:1;padding:10px;background:var(--gold);color:#1a0f00;font-weight:700;border:none;cursor:pointer;font-size:13px;">
+          👤 Член клуба
+        </button>
+        <button type="button" id="btnGuest" onclick="setGuestMode(true)"
+          style="flex:1;padding:10px;background:var(--bg3);color:var(--text2);font-weight:600;border:none;cursor:pointer;font-size:13px;">
+          🚶 Гость +20%
+        </button>
+      </div>
+    </div>
+    <div class="form-group" id="guestPriceInfo" style="display:none;background:rgba(201,168,76,0.1);border-radius:8px;padding:10px 12px;">
+      <span style="font-size:12px;color:var(--text2);">Цена для гостя:</span>
+      <span id="guestPriceVal" style="font-size:16px;font-weight:700;color:var(--gold);margin-left:8px;"></span>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('modalSale')">Отмена</button>
@@ -955,7 +973,7 @@ async function dbInsertIncoming(record) {
 }
 
 async function dbInsertSale(record) {
-  const payload = { id: Date.now(), date: record.date, name: record.name, qty: record.qty, price: record.price, total: record.total, comment: record.comment || '', seller: record.seller || '' };
+  const payload = { id: Date.now(), date: record.date, name: record.name, qty: record.qty, price: record.price, total: record.total, comment: record.comment || '', seller: record.seller || '', guest: record.guest || false };
   console.log('insertSale:', payload);
   const { error } = await db.from('sales').insert(payload);
   if (error) { console.error('insertSale error:', error); throw new Error(error.message || error.hint || JSON.stringify(error)); }
@@ -1143,10 +1161,11 @@ function renderSales() {
   const tbody = document.getElementById('bodySales');
   const canRollback = IS_ADMIN(currentUser);
   const showSeller = IS_ADMIN(currentUser) && !isMobile();
-  // show/hide seller column header
   const thSeller = document.getElementById('thSellerCol');
+  const thGuest  = document.getElementById('thGuestCol');
   if (thSeller) thSeller.style.display = showSeller ? '' : 'none';
-  if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="8">Нет продаж</td></tr>`; return; }
+  if (thGuest)  thGuest.style.display  = showSeller ? '' : 'none';
+  if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="9">Нет продаж</td></tr>`; return; }
   if (isMobile()) {
     const wrap3 = document.getElementById('bodySales').closest('.table-wrap');
     const tbl3 = wrap3.querySelector('table');
@@ -1172,6 +1191,7 @@ function renderSales() {
       <td class="td-total" style="color:#e8c97e">${formatNum(r.total)}</td>
       <td class="td-comment">${esc(r.comment||'—')}</td>
       ${showSeller ? `<td class="td-comment" style="color:var(--gold2)">${esc(r.seller||'—')}</td>` : ''}
+      ${showSeller ? `<td>${r.guest ? '<span style="background:#8B0000;color:#fff;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">🚶 Гость</span>' : '<span style="color:var(--text2);font-size:12px;">👤 Клуб</span>'}</td>` : ''}
       ${canRollback ? `<td><button class="btn-rollback" onclick="askRollback('${r.id}')">↩ Откат</button></td>` : ''}
     </tr>`).join('');
   }
@@ -1235,6 +1255,7 @@ function openSale() {
   if (!CAN_SALE(currentUser)) return;
   document.getElementById('saleDate').value = todayStr();
   ['saleName','saleQty','salePrice','saleComment'].forEach(id => { document.getElementById(id).value = ''; });
+  setGuestMode(false);
   document.getElementById('saleStock').textContent = '—';
   clearErrors('Sale');
   refreshNameFilters();
@@ -1248,11 +1269,35 @@ function clearErrors(prefix) {
   if (a) { a.classList.remove('show'); a.textContent = ''; }
 }
 
+let saleIsGuest = false;
+
+function setGuestMode(isGuest) {
+  saleIsGuest = isGuest;
+  document.getElementById('btnMember').style.background = isGuest ? 'var(--bg3)' : 'var(--gold)';
+  document.getElementById('btnMember').style.color = isGuest ? 'var(--text2)' : '#1a0f00';
+  document.getElementById('btnGuest').style.background = isGuest ? 'var(--red)' : 'var(--bg3)';
+  document.getElementById('btnGuest').style.color = isGuest ? '#fff' : 'var(--text2)';
+  updateGuestPrice();
+}
+
+function updateGuestPrice() {
+  const basePrice = parseFloat(document.getElementById('salePrice').value);
+  const info = document.getElementById('guestPriceInfo');
+  if (saleIsGuest && basePrice > 0) {
+    const guestPrice = Math.ceil(basePrice * 1.2);
+    document.getElementById('guestPriceVal').textContent = guestPrice + ',00 AZN';
+    info.style.display = '';
+  } else {
+    info.style.display = 'none';
+  }
+}
+
 function fillSalePrice() {
   const name = document.getElementById('saleName').value;
   const item = stock.find(r => r.name === name);
   document.getElementById('salePrice').value = item ? item.price.toFixed(2) : '';
   document.getElementById('saleStock').textContent = item ? item.qty + ' шт.' : '—';
+  updateGuestPrice();
 }
 
 async function submitIncoming() {
@@ -1292,13 +1337,15 @@ async function submitSale() {
   const date    = document.getElementById('saleDate').value;
   const name    = document.getElementById('saleName').value;
   const qty     = parseInt(document.getElementById('saleQty').value);
-  const price   = parseFloat(document.getElementById('salePrice').value);
+  const basePrice = parseFloat(document.getElementById('salePrice').value);
   const comment = document.getElementById('saleComment').value.trim();
+  const guest   = saleIsGuest;
+  const price   = guest ? Math.ceil(basePrice * 1.2) : basePrice;
   clearErrors('Sale');
   let ok = true;
   if (!name)              { showErr('saleName',  'errSaleName');  ok = false; }
   if (!qty || qty < 1)    { showErr('saleQty',   'errSaleQty');   ok = false; }
-  if (!price||price<=0)   { showErr('salePrice', 'errSalePrice'); ok = false; }
+  if (!basePrice||basePrice<=0) { showErr('salePrice', 'errSalePrice'); ok = false; }
   if (!ok) return;
   const item = stock.find(r => r.name === name);
   if (!item || item.qty < qty) {
@@ -1311,10 +1358,10 @@ async function submitSale() {
   }
   showLoading(true);
   try {
-    await dbInsertSale({ date, name, qty, price, total: qty * price, comment, seller: currentUser.name });
+    await dbInsertSale({ date, name, qty, price, total: qty * price, comment, seller: currentUser.name, guest });
     await dbUpsertStock({ name, qty: item.qty - qty, price: item.price, date });
     closeModal('modalSale');
-    toast('Продажа оформлена: ' + name + ' ×' + qty, 'success');
+    toast(`Продажа оформлена: ${name} ×${qty}${guest ? ' (гость, цена '+price+' AZN)' : ''}`, 'success');
     await dbLoad();
   } catch(e) {
     console.error('submitSale error:', e);
