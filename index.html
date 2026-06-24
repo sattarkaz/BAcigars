@@ -1284,8 +1284,9 @@ const GUEST_MARKUP_DATE = '2026-06-16'; // наценка для гостей н
 
 function isGuestMarkupApplicable() {
   const name = document.getElementById('saleName').value;
-  const item = stock.find(r => r.name === name);
-  return item && item.date >= GUEST_MARKUP_DATE;
+  if (!name) return false;
+  // Проверяем таблицу incoming — было ли поступление этой сигары >= 16.06.2026
+  return incoming.some(r => r.name === name && (r.date||'').substring(0,10) >= GUEST_MARKUP_DATE);
 }
 
 function updateGuestPrice() {
