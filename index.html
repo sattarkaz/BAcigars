@@ -1372,8 +1372,18 @@ async function submitSale() {
   }
   showLoading(true);
   try {
+    // Читаем актуальный остаток из базы перед продажей
+    const { data: freshStock } = await db.from('stock').select('qty,price').eq('name', name).single();
+    const currentQty = freshStock ? freshStock.qty : item.qty;
+    if (currentQty < qty) {
+      const al = document.getElementById('alertSale');
+      al.textContent = `Недостаточно сигар! В наличии: ${currentQty} шт., запрошено: ${qty} шт.`;
+      al.classList.add('show');
+      showLoading(false);
+      return;
+    }
     await dbInsertSale({ date, name, qty, price, total: qty * price, comment, seller: currentUser.name, guest });
-    await dbUpsertStock({ name, qty: item.qty - qty, price: item.price, date });
+    await dbUpsertStock({ name, qty: currentQty - qty, price: item.price, date });
     closeModal('modalSale');
     toast(`Продажа оформлена: ${name} ×${qty}${guest ? ' (гость, цена '+price+' AZN)' : ''}`, 'success');
     await dbLoad();
@@ -1466,7 +1476,8 @@ async function submitEditStock() {
     if (diff > 0) {
       await dbInsertIncoming({ date: todayStr(), name: item.name, qty: diff, price, total: diff * price, comment: note });
     } else if (diff < 0) {
-      await dbInsertSale({ date: todayStr(), name: item.name, qty: Math.abs(diff), price, total: Math.abs(diff) * price, comment: note });
+      // Корректировка в минус — пишем в поступления с отрицательным кол-вом для истории, НЕ в продажи
+      await dbInsertIncoming({ date: todayStr(), name: item.name, qty: diff, price, total: diff * price, comment: note });
     }
     closeModal('modalEditStock');
     toast('Позиция обновлена: ' + item.name, 'success');
