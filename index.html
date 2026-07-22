@@ -410,8 +410,10 @@
     display: inline-block;
     padding-right: 40px;
     animation: marquee 8s linear infinite;
+    animation-play-state: paused;
   }
-  .marquee-wrap span:hover { animation-play-state: paused; }
+  .marquee-wrap.overflow span { animation-play-state: running; }
+  .marquee-wrap:not(.overflow) span { padding-right: 0; }
 
   /* Mobile FAB bar hidden on desktop */
   .mobile-fab-bar { display: none; }
@@ -1266,12 +1268,25 @@ function refreshNameFilters() {
     ).join('');
 }
 
+function checkMarquee() {
+  document.querySelectorAll('.marquee-wrap').forEach(wrap => {
+    const span = wrap.querySelector('span');
+    if (!span) return;
+    if (span.scrollWidth > wrap.clientWidth) {
+      wrap.classList.add('overflow');
+    } else {
+      wrap.classList.remove('overflow');
+    }
+  });
+}
+
 function renderAll() {
   updateDashboard();
   refreshNameFilters();
   renderStock();
   renderIncoming();
   renderSales();
+  setTimeout(checkMarquee, 50);
 }
 
 // ── MODALS ──
