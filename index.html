@@ -758,6 +758,19 @@
       <label>Комментарий к изменению</label>
       <input type="text" id="editComment" placeholder="Необязательно"/>
     </div>
+    <div class="form-group">
+      <label>Статус</label>
+      <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <button type="button" id="btnUnlock" onclick="setLocked(false)"
+          style="flex:1;padding:10px;background:var(--gold);color:#1a0f00;font-weight:700;border:none;cursor:pointer;font-size:13px;">
+          ✅ Доступна
+        </button>
+        <button type="button" id="btnLock" onclick="setLocked(true)"
+          style="flex:1;padding:10px;background:var(--bg3);color:var(--text2);font-weight:600;border:none;cursor:pointer;font-size:13px;">
+          🔒 Заблокирована
+        </button>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('modalEditStock')">Отмена</button>
       <button class="btn btn-primary" onclick="submitEditStock()">Сохранить</button>
@@ -957,6 +970,7 @@ async function dbLoad() {
 async function dbUpsertStock(item) {
   const payload = { name: item.name, qty: item.qty, price: item.price, date: item.date };
   if (item.comment !== undefined) payload.comment = item.comment;
+  if (item.locked !== undefined) payload.locked = item.locked;
   console.log('upsertStock:', payload);
   const { data, error } = await db.from('stock')
     .upsert(payload, { onConflict: 'name' })
@@ -1072,9 +1086,11 @@ function renderStock() {
     tableEl.style.display = 'none';
     mobileDiv.innerHTML = data.map(r => {
       const qc = r.qty === 0 ? '#c0392b' : r.qty < 5 ? '#e67e22' : 'var(--gold2)';
+      const lockIcon = r.locked ? ' 🔒' : '';
+      const opacity = r.locked ? 'opacity:0.5;' : '';
       const btn = canEdit ? `<button class="btn-edit" onclick="openEditStock('${r.id}')" style="padding:5px 10px;font-size:12px;">✏️</button>` : '';
-      return `<div style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
-        <span style="flex:1;font-size:14px;font-weight:700;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">${esc(r.name)}</span>
+      return `<div style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--bg2);border:1px solid ${r.locked ? '#555' : 'var(--border)'};border-radius:8px;margin-bottom:6px;${opacity}">
+        <span style="flex:1;font-size:14px;font-weight:700;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">${esc(r.name)}${lockIcon}</span>
         <span style="flex-shrink:0;font-size:13px;color:var(--text2);">${formatNum(r.price)} ₼</span>
         <span style="flex-shrink:0;font-size:18px;font-weight:700;color:${qc};">${r.qty}</span>
         ${btn}
@@ -1083,8 +1099,10 @@ function renderStock() {
   } else {
     tbody.innerHTML = data.map(r => {
       const qc = r.qty === 0 ? 'badge-out' : r.qty < 5 ? 'badge-low' : '';
-      return `<tr>
-        <td class="td-name">${esc(r.name)}</td>
+      const lockIcon = r.locked ? ' 🔒' : '';
+      const rowStyle = r.locked ? 'opacity:0.5;' : '';
+      return `<tr style="${rowStyle}">
+        <td class="td-name">${esc(r.name)}${lockIcon}</td>
         <td class="td-qty ${qc}">${r.qty}</td>
         <td class="td-price">${formatNum(r.price)}</td>
         <td class="td-total">${formatNum(r.qty*r.price)}</td>
@@ -1229,7 +1247,7 @@ function refreshNameFilters() {
   const saleSel = document.getElementById('saleName');
   const cur = saleSel.value;
   saleSel.innerHTML = '<option value="">— выберите —</option>' +
-    stock.filter(r => r.qty > 0).map(r =>
+    stock.filter(r => r.qty > 0 && !r.locked).map(r =>
       `<option value="${esc(r.name)}" ${r.name===cur?'selected':''} >${esc(r.name)} (${r.qty} шт.)</option>`
     ).join('');
 }
@@ -1436,6 +1454,16 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
 // ── EDIT STOCK ──
 let editingStockId = null;
 
+let editingLocked = false;
+
+function setLocked(locked) {
+  editingLocked = locked;
+  document.getElementById('btnUnlock').style.background = locked ? 'var(--bg3)' : 'var(--gold)';
+  document.getElementById('btnUnlock').style.color = locked ? 'var(--text2)' : '#1a0f00';
+  document.getElementById('btnLock').style.background = locked ? '#8B0000' : 'var(--bg3)';
+  document.getElementById('btnLock').style.color = locked ? '#fff' : 'var(--text2)';
+}
+
 function openEditStock(stockId) {
   if (!IS_ADMIN(currentUser)) return;
   const item = stock.find(r => String(r.id) === String(stockId));
@@ -1445,6 +1473,7 @@ function openEditStock(stockId) {
   document.getElementById('editQty').value   = item.qty;
   document.getElementById('editPrice').value = item.price.toFixed(2);
   document.getElementById('editComment').value = '';
+  setLocked(item.locked || false);
   document.querySelectorAll('#modalEditStock .err-msg').forEach(e => e.classList.remove('show'));
   document.querySelectorAll('#modalEditStock input').forEach(e => e.classList.remove('error'));
   document.getElementById('modalEditStock').classList.add('open');
@@ -1472,7 +1501,7 @@ async function submitEditStock() {
   try {
     const diff = qty - item.qty;
     const note = '✏️ Ручная корректировка' + (comment ? ': ' + comment : '');
-    await dbUpsertStock({ name: item.name, qty, price, date: todayStr() });
+    await dbUpsertStock({ name: item.name, qty, price, date: todayStr(), locked: editingLocked });
     if (diff > 0) {
       await dbInsertIncoming({ date: todayStr(), name: item.name, qty: diff, price, total: diff * price, comment: note });
     } else if (diff < 0) {
