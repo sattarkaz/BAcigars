@@ -399,6 +399,20 @@
     .header-logo { width: 36px; height: 36px; }
   }
 
+  /* Бегущий текст для длинных названий */
+  @keyframes marquee {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+  }
+  .marquee-wrap { overflow: hidden; display: flex; min-width: 0; }
+  .marquee-wrap span {
+    white-space: nowrap;
+    display: inline-block;
+    padding-right: 40px;
+    animation: marquee 8s linear infinite;
+  }
+  .marquee-wrap span:hover { animation-play-state: paused; }
+
   /* Mobile FAB bar hidden on desktop */
   .mobile-fab-bar { display: none; }
 
@@ -1089,7 +1103,7 @@ function renderStock() {
       const opacity = r.locked ? 'opacity:0.5;' : '';
       const btn = canEdit ? `<button class="btn-edit" onclick="openEditStock('${r.id}')" style="padding:5px 10px;font-size:12px;">✏️</button>` : '';
       return `<div style="display:flex;align-items:center;gap:8px;padding:11px 12px;background:var(--bg2);border:1px solid ${r.locked ? '#555' : 'var(--border)'};border-radius:8px;margin-bottom:6px;${opacity}">
-        <span style="flex:1;font-size:14px;font-weight:700;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">${esc(r.name)}</span>
+        <div class="marquee-wrap" style="flex:1;min-width:0;"><span style="font-size:14px;font-weight:700;color:var(--gold2);">${esc(r.name)}</span></div>
         ${r.locked ? `<span style="flex-shrink:0;font-size:14px;">🔒</span>` : ''}
         <span style="flex-shrink:0;font-size:13px;color:var(--text2);">${formatNum(r.price)} ₼</span>
         <span style="flex-shrink:0;font-size:18px;font-weight:700;color:${qc};">${r.qty}</span>
@@ -1142,8 +1156,8 @@ function renderIncoming() {
     md2.innerHTML = data.map(r => `
       <div style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
         <div style="flex:1;min-width:0;">
-          <div style="font-size:14px;font-weight:700;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(r.name)}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:2px;">${formatDate(r.date)}</div>
+          <div class="marquee-wrap"><span style="font-size:14px;font-weight:700;color:var(--gold2);">${esc(r.name)}</span></div>
+          <div style="font-size:11px;color:var(--text2);margin-top:1px;">${formatDate(r.date)}</div>
         </div>
         <span style="flex-shrink:0;font-size:16px;font-weight:700;color:var(--gold2);">${r.qty} шт.</span>
         <span style="flex-shrink:0;font-size:13px;color:#7bd99c;font-weight:600;">${formatNum(r.total)} ₼</span>
@@ -1193,8 +1207,8 @@ function renderSales() {
     md3.innerHTML = data.map(r => `
       <div style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
         <div style="flex:1;min-width:0;">
-          <div style="font-size:14px;font-weight:700;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(r.name)}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:2px;">${formatDate(r.date)}</div>
+          <div class="marquee-wrap"><span style="font-size:14px;font-weight:700;color:var(--gold2);">${esc(r.name)}</span></div>
+          <div style="font-size:11px;color:var(--text2);margin-top:1px;">${formatDate(r.date)}${r.seller ? ` · <span style="color:var(--gold2);font-weight:600;">${esc(r.seller)}</span>` : ''}</div>
         </div>
         <span style="flex-shrink:0;font-size:16px;font-weight:700;color:#e67e22;">${r.qty} шт.</span>
         <span style="flex-shrink:0;font-size:13px;color:#e8c97e;font-weight:600;">${formatNum(r.total)} ₼</span>
