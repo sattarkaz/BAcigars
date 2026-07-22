@@ -1086,11 +1086,11 @@ function renderStock() {
     tableEl.style.display = 'none';
     mobileDiv.innerHTML = data.map(r => {
       const qc = r.qty === 0 ? '#c0392b' : r.qty < 5 ? '#e67e22' : 'var(--gold2)';
-      const lockIcon = r.locked ? ' 🔒' : '';
       const opacity = r.locked ? 'opacity:0.5;' : '';
       const btn = canEdit ? `<button class="btn-edit" onclick="openEditStock('${r.id}')" style="padding:5px 10px;font-size:12px;">✏️</button>` : '';
-      return `<div style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--bg2);border:1px solid ${r.locked ? '#555' : 'var(--border)'};border-radius:8px;margin-bottom:6px;${opacity}">
-        <span style="flex:1;font-size:14px;font-weight:700;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">${esc(r.name)}${lockIcon}</span>
+      return `<div style="display:flex;align-items:center;gap:8px;padding:11px 12px;background:var(--bg2);border:1px solid ${r.locked ? '#555' : 'var(--border)'};border-radius:8px;margin-bottom:6px;${opacity}">
+        <span style="flex:1;font-size:14px;font-weight:700;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;">${esc(r.name)}</span>
+        ${r.locked ? `<span style="flex-shrink:0;font-size:14px;">🔒</span>` : ''}
         <span style="flex-shrink:0;font-size:13px;color:var(--text2);">${formatNum(r.price)} ₼</span>
         <span style="flex-shrink:0;font-size:18px;font-weight:700;color:${qc};">${r.qty}</span>
         ${btn}
