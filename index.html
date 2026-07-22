@@ -855,6 +855,12 @@ async function doLogin() {
       document.getElementById('loginPass').value = '';
       return;
     }
+    if (data.blocked) {
+      document.getElementById('loginErr').textContent = 'Ваш аккаунт заблокирован. Обратитесь к администратору.';
+      document.getElementById('loginErr').classList.add('show');
+      document.getElementById('loginPass').value = '';
+      return;
+    }
     currentUser = data;
     localStorage.setItem('cig_session', JSON.stringify({ login: data.login }));
     startApp();
@@ -918,17 +924,37 @@ async function renderAdminPanel() {
   const rClass = { admin: 'role-admin', manager: 'role-manager', viewer: 'role-viewer' };
   const rLabel = { admin: 'Администратор', manager: 'Менеджер', viewer: 'Просмотр' };
 
-  document.getElementById('userList').innerHTML = USERS.map(u => `
-    <div class="user-row">
+  document.getElementById('userList').innerHTML = USERS.map(u => {
+    const isSelf = u.login === currentUser.login;
+    const blocked = u.blocked || false;
+    const blockBtn = !isSelf ? `
+      <button onclick="toggleBlock('${esc(u.login)}', ${!blocked})"
+        style="padding:5px 10px;font-size:11px;border-radius:6px;border:1px solid ${blocked ? 'var(--gold)' : '#8B0000'};
+               background:${blocked ? 'rgba(201,168,76,0.1)' : 'rgba(139,0,0,0.15)'};
+               color:${blocked ? 'var(--gold)' : '#e07070'};cursor:pointer;white-space:nowrap;">
+        ${blocked ? '✅ Разблокировать' : '🔒 Заблокировать'}
+      </button>` : '<span style="font-size:11px;color:var(--text2);">это вы</span>';
+    return `
+    <div class="user-row" style="${blocked ? 'opacity:0.5;' : ''}">
       <div class="user-info">
-        <div class="uname2">${esc(u.name)} <span style="color:var(--text2);font-weight:400;font-size:12px">(${esc(u.login)})</span></div>
+        <div class="uname2">${esc(u.name)} <span style="color:var(--text2);font-weight:400;font-size:12px">(${esc(u.login)})</span>
+        ${blocked ? '<span style="font-size:11px;color:#e07070;margin-left:6px;">🔒 заблокирован</span>' : ''}
+        </div>
       </div>
       <span class="role-badge ${rClass[u.role]}">${rLabel[u.role]}</span>
-    </div>
-  `).join('');
+      ${blockBtn}
+    </div>`;
+  }).join('');
 
   const sel = document.getElementById('changePwUser');
   sel.innerHTML = USERS.map(u => `<option value="${esc(u.login)}">${esc(u.name)} (${esc(u.login)})</option>`).join('');
+}
+
+async function toggleBlock(login, block) {
+  const { error } = await db.from('users').update({ blocked: block }).eq('login', login);
+  if (error) { toast('Ошибка: ' + error.message, 'error'); return; }
+  await renderAdminPanel();
+  toast(block ? `Пользователь ${login} заблокирован` : `Пользователь ${login} разблокирован`, 'success');
 }
 
 async function changePassword() {
