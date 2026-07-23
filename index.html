@@ -1045,11 +1045,13 @@ async function applyBalanceChange() {
   const newBalance = (user.balance || 0) + amount;
   const { error } = await db.from('users').update({ balance: newBalance }).eq('login', login);
   if (error) { toast('Ошибка: ' + error.message, 'error'); return; }
-  await db.from('balance_log').insert({
-    id: Date.now(), date: todayStr(), login,
-    amount, comment: comment || (amount > 0 ? 'Пополнение' : 'Списание'),
-    admin: currentUser.name
-  });
+  try {
+    await db.from('balance_log').insert({
+      id: Date.now(), date: todayStr(), login,
+      amount, comment: comment || (amount > 0 ? 'Пополнение' : 'Списание'),
+      admin: currentUser.name
+    });
+  } catch(e) { console.warn('balance_log:', e); }
   user.balance = newBalance;
   document.getElementById('balanceChange').value = '';
   document.getElementById('balanceComment').value = '';
@@ -1601,13 +1603,14 @@ async function submitSale() {
       const buyer = currentUser;
       const newBalance = (buyer.balance || 0) - qty * price;
       await db.from('users').update({ balance: newBalance }).eq('login', buyer.login);
-      await db.from('balance_log').insert({
-        id: Date.now(), date, login: buyer.login,
-        amount: -(qty * price),
-        comment: `Покупка: ${name} ×${qty}`,
-        admin: currentUser.name
-      });
-      // Обновляем локальный кэш
+      try {
+        await db.from('balance_log').insert({
+          id: Date.now(), date, login: buyer.login,
+          amount: -(qty * price),
+          comment: `Покупка: ${name} ×${qty}`,
+          admin: currentUser.name
+        });
+      } catch(e) { console.warn('balance_log insert failed:', e); }
       const u = USERS.find(u => u.login === buyer.login);
       if (u) u.balance = newBalance;
       currentUser.balance = newBalance;
@@ -1779,8 +1782,9 @@ document.getElementById('confirmOverlay').addEventListener('click', e => {
   if (session) {
     try {
       const s = JSON.parse(session);
-      const { data, error } = await db.from('users').select('*').ilike('login', s.login).single();
-      if (data && !error && data.blocked !== true) { currentUser = data; startApp(); return; }
+      const { data, error } = await db.from('users').select('*').ilike('login', s.login);
+      const user = data && data[0];
+      if (user && !error && user.blocked !== true) { currentUser = user; startApp(); return; }
     } catch(e) {}
     localStorage.removeItem('cig_session');
   }
