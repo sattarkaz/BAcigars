@@ -491,6 +491,7 @@
       <div class="user-badge">
         <span class="uname" id="headerUser">—</span>
         <span class="urole" id="headerRole"></span>
+        <span id="headerBalance" style="display:none;font-size:11px;color:#7bd99c;font-weight:700;"></span>
       </div>
       <button class="btn-logout" onclick="doLogout()">Выйти</button>
     </div>
@@ -879,6 +880,7 @@ async function loadUsers() {
   if (currentUser) {
     const me = USERS.find(u => u.login === currentUser.login);
     if (me) currentUser.balance = me.balance || 0;
+    updateHeaderBalance();
   }
   return USERS;
 }
@@ -948,6 +950,7 @@ function startApp() {
   document.getElementById('headerUser').textContent = currentUser.name;
   const roleNames = { admin: 'Администратор', manager: 'Менеджер', viewer: 'Просмотр' };
   document.getElementById('headerRole').textContent = roleNames[currentUser.role] || '';
+  updateHeaderBalance();
   // Загружаем пользователей чтобы получить актуальный баланс
   loadUsers();
 
@@ -1023,6 +1026,18 @@ async function toggleBlock(login, block) {
   if (error) { toast('Ошибка: ' + error.message, 'error'); return; }
   await renderAdminPanel();
   toast(block ? `Пользователь ${login} заблокирован` : `Пользователь ${login} разблокирован`, 'success');
+}
+
+function updateHeaderBalance() {
+  const el = document.getElementById('headerBalance');
+  if (!el || !currentUser) return;
+  if (currentUser.role !== 'admin') {
+    const bal = currentUser.balance || 0;
+    el.textContent = '💳 ' + formatNum(bal) + ' ₼';
+    el.style.display = '';
+  } else {
+    el.style.display = 'none';
+  }
 }
 
 function showUserBalance() {
@@ -1614,6 +1629,7 @@ async function submitSale() {
       const u = USERS.find(u => u.login === buyer.login);
       if (u) u.balance = newBalance;
       currentUser.balance = newBalance;
+      updateHeaderBalance();
     }
     await dbUpsertStock({ name, qty: currentQty - qty, price: item.price, date });
     closeModal('modalSale');
