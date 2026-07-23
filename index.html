@@ -1056,6 +1056,8 @@ async function applyBalanceChange() {
   await renderAdminPanel();
   toast(`Баланс ${user.name} ${amount > 0 ? 'пополнен на' : 'уменьшен на'} ${formatNum(Math.abs(amount))} ₼`, 'success');
 }
+
+async function changePassword() {
   const login = document.getElementById('changePwUser').value;
   const newPw = document.getElementById('newPassword').value.trim();
   if (!newPw || newPw.length < 4) { toast('Пароль должен быть не менее 4 символов', 'error'); return; }
