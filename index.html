@@ -648,6 +648,26 @@
         </div>
         <button class="btn btn-primary btn-sm" onclick="changePassword()">Сохранить пароль</button>
       </div>
+      <br/>
+      <div class="admin-panel" style="margin-top:0">
+        <h3>💳 Управление балансом</h3>
+        <div class="form-group" style="max-width:300px">
+          <label>Пользователь</label>
+          <select class="filter-select" id="balanceUser" style="width:100%" onchange="showUserBalance()"></select>
+        </div>
+        <div id="currentBalanceInfo" style="padding:10px 0;font-size:14px;color:var(--text2);"></div>
+        <div class="form-group" style="max-width:300px">
+          <label>Сумма (+ пополнение, − списание)</label>
+          <input type="number" id="balanceChange" step="0.01" placeholder="например: 100 или -50"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:14px;width:100%"/>
+        </div>
+        <div class="form-group" style="max-width:300px">
+          <label>Комментарий</label>
+          <input type="text" id="balanceComment" placeholder="Причина изменения"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:14px;width:100%"/>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="applyBalanceChange()">Применить</button>
+      </div>
     </div>
 
   </div><!-- /main -->
@@ -713,12 +733,12 @@
     </div>
     <div class="form-group">
       <label>Количество, шт. *</label>
-      <input type="number" id="saleQty" min="1" inputmode="numeric" placeholder="Сколько продаём"/>
+      <input type="number" id="saleQty" min="1" inputmode="numeric" placeholder="Сколько продаём" oninput="updateBalanceInfo()"/>
       <div class="err-msg" id="errSaleQty">Введите корректное количество</div>
     </div>
     <div class="form-group">
       <label>Цена за штуку, AZN *</label>
-      <input type="number" id="salePrice" min="0.01" step="0.01" inputmode="decimal" placeholder="Цена продажи" oninput="updateGuestPrice()"/>
+      <input type="number" id="salePrice" min="0.01" step="0.01" inputmode="decimal" placeholder="Цена продажи" oninput="updateGuestPrice();updateBalanceInfo()"/>
       <div class="err-msg" id="errSalePrice">Введите цену > 0</div>
     </div>
     <div class="form-group">
@@ -741,6 +761,33 @@
     <div class="form-group" id="guestPriceInfo" style="display:none;background:rgba(201,168,76,0.1);border-radius:8px;padding:10px 12px;">
       <span style="font-size:12px;color:var(--text2);">Цена для гостя:</span>
       <span id="guestPriceVal" style="font-size:16px;font-weight:700;color:var(--gold);margin-left:8px;"></span>
+    </div>
+    <div class="form-group">
+      <label>Способ оплаты</label>
+      <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <button type="button" id="btnPayBalance" onclick="setPaymentMethod('balance')"
+          style="flex:1;padding:10px;background:var(--gold);color:#1a0f00;font-weight:700;border:none;cursor:pointer;font-size:13px;">
+          💳 С баланса
+        </button>
+        <button type="button" id="btnPayCash" onclick="setPaymentMethod('cash')"
+          style="flex:1;padding:10px;background:var(--bg3);color:var(--text2);font-weight:600;border:none;cursor:pointer;font-size:13px;">
+          💵 Cash
+        </button>
+      </div>
+    </div>
+    <div id="balanceInfo" style="background:rgba(201,168,76,0.08);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;color:var(--text2);">Баланс покупателя:</span>
+        <span id="balanceAmount" style="font-size:15px;font-weight:700;color:var(--gold);">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+        <span style="font-size:12px;color:var(--text2);">К списанию:</span>
+        <span id="balanceDeduct" style="font-size:15px;font-weight:700;color:#e67e22;">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+        <span style="font-size:12px;color:var(--text2);">Остаток после:</span>
+        <span id="balanceAfter" style="font-size:15px;font-weight:700;">—</span>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('modalSale')">Отмена</button>
@@ -828,6 +875,11 @@ async function loadUsers() {
   const { data, error } = await db.from('users').select('*');
   if (error) { console.error('loadUsers error:', error); return []; }
   USERS = data || [];
+  // Синхронизируем баланс текущего пользователя
+  if (currentUser) {
+    const me = USERS.find(u => u.login === currentUser.login);
+    if (me) currentUser.balance = me.balance || 0;
+  }
   return USERS;
 }
 
@@ -888,6 +940,8 @@ function startApp() {
   document.getElementById('headerUser').textContent = currentUser.name;
   const roleNames = { admin: 'Администратор', manager: 'Менеджер', viewer: 'Просмотр' };
   document.getElementById('headerRole').textContent = roleNames[currentUser.role] || '';
+  // Загружаем пользователей чтобы получить актуальный баланс
+  loadUsers();
 
   // show admin tab
   document.getElementById('tabAdmin').style.display = IS_ADMIN(currentUser) ? '' : 'none';
@@ -939,6 +993,7 @@ async function renderAdminPanel() {
       <div class="user-info">
         <div class="uname2">${esc(u.name)} <span style="color:var(--text2);font-weight:400;font-size:12px">(${esc(u.login)})</span>
         ${blocked ? '<span style="font-size:11px;color:#e07070;margin-left:6px;">🔒 заблокирован</span>' : ''}
+        <span style="font-size:12px;color:var(--gold);margin-left:8px;">💳 ${formatNum(u.balance||0)} ₼</span>
         </div>
       </div>
       <span class="role-badge ${rClass[u.role]}">${rLabel[u.role]}</span>
@@ -948,6 +1003,11 @@ async function renderAdminPanel() {
 
   const sel = document.getElementById('changePwUser');
   sel.innerHTML = USERS.map(u => `<option value="${esc(u.login)}">${esc(u.name)} (${esc(u.login)})</option>`).join('');
+  const balSel = document.getElementById('balanceUser');
+  balSel.innerHTML = USERS.filter(u => u.role !== 'admin' || true).map(u =>
+    `<option value="${esc(u.login)}">${esc(u.name)} — ${formatNum(u.balance||0)} ₼</option>`
+  ).join('');
+  showUserBalance();
 }
 
 async function toggleBlock(login, block) {
@@ -957,7 +1017,37 @@ async function toggleBlock(login, block) {
   toast(block ? `Пользователь ${login} заблокирован` : `Пользователь ${login} разблокирован`, 'success');
 }
 
-async function changePassword() {
+function showUserBalance() {
+  const login = document.getElementById('balanceUser').value;
+  const user = USERS.find(u => u.login === login);
+  const el = document.getElementById('currentBalanceInfo');
+  if (user && el) {
+    el.innerHTML = `Текущий баланс: <strong style="color:var(--gold);font-size:16px;">${formatNum(user.balance||0)} ₼</strong>`;
+  }
+}
+
+async function applyBalanceChange() {
+  const login = document.getElementById('balanceUser').value;
+  const amount = parseFloat(document.getElementById('balanceChange').value);
+  const comment = document.getElementById('balanceComment').value.trim();
+  if (!login) { toast('Выберите пользователя', 'error'); return; }
+  if (isNaN(amount) || amount === 0) { toast('Введите сумму', 'error'); return; }
+  const user = USERS.find(u => u.login === login);
+  if (!user) return;
+  const newBalance = (user.balance || 0) + amount;
+  const { error } = await db.from('users').update({ balance: newBalance }).eq('login', login);
+  if (error) { toast('Ошибка: ' + error.message, 'error'); return; }
+  await db.from('balance_log').insert({
+    id: Date.now(), date: todayStr(), login,
+    amount, comment: comment || (amount > 0 ? 'Пополнение' : 'Списание'),
+    admin: currentUser.name
+  });
+  user.balance = newBalance;
+  document.getElementById('balanceChange').value = '';
+  document.getElementById('balanceComment').value = '';
+  await renderAdminPanel();
+  toast(`Баланс ${user.name} ${amount > 0 ? 'пополнен на' : 'уменьшен на'} ${formatNum(Math.abs(amount))} ₼`, 'success');
+}
   const login = document.getElementById('changePwUser').value;
   const newPw = document.getElementById('newPassword').value.trim();
   if (!newPw || newPw.length < 4) { toast('Пароль должен быть не менее 4 символов', 'error'); return; }
@@ -1329,6 +1419,7 @@ function openSale() {
   document.getElementById('saleDate').value = todayStr();
   ['saleName','saleQty','salePrice','saleComment'].forEach(id => { document.getElementById(id).value = ''; });
   setGuestMode(false);
+  setPaymentMethod('balance');
   document.getElementById('saleStock').textContent = '—';
   clearErrors('Sale');
   refreshNameFilters();
@@ -1342,7 +1433,35 @@ function clearErrors(prefix) {
   if (a) { a.classList.remove('show'); a.textContent = ''; }
 }
 
-let saleIsGuest = false;
+let salePaymentMethod = 'balance';
+
+function setPaymentMethod(method) {
+  salePaymentMethod = method;
+  document.getElementById('btnPayBalance').style.background = method === 'balance' ? 'var(--gold)' : 'var(--bg3)';
+  document.getElementById('btnPayBalance').style.color = method === 'balance' ? '#1a0f00' : 'var(--text2)';
+  document.getElementById('btnPayCash').style.background = method === 'cash' ? '#2a6a2a' : 'var(--bg3)';
+  document.getElementById('btnPayCash').style.color = method === 'cash' ? '#fff' : 'var(--text2)';
+  document.getElementById('balanceInfo').style.display = method === 'balance' ? '' : 'none';
+  updateBalanceInfo();
+}
+
+function updateBalanceInfo() {
+  if (salePaymentMethod !== 'balance') return;
+  const buyer = document.getElementById('saleBuyer') ? document.getElementById('saleBuyer').value : currentUser.login;
+  const user = USERS.find(u => u.login === buyer) || currentUser;
+  const balance = user ? (user.balance || 0) : 0;
+  const qty = parseInt(document.getElementById('saleQty').value) || 0;
+  const basePrice = parseFloat(document.getElementById('salePrice').value) || 0;
+  const applicable = isGuestMarkupApplicable();
+  const price = (saleIsGuest && applicable) ? Math.ceil(basePrice * 1.2) : basePrice;
+  const total = qty * price;
+  const after = balance - total;
+  document.getElementById('balanceAmount').textContent = formatNum(balance) + ' ₼';
+  document.getElementById('balanceDeduct').textContent = total > 0 ? '−' + formatNum(total) + ' ₼' : '—';
+  const afterEl = document.getElementById('balanceAfter');
+  afterEl.textContent = total > 0 ? formatNum(after) + ' ₼' : '—';
+  afterEl.style.color = after < 0 ? '#c0392b' : '#7bd99c';
+}
 
 function setGuestMode(isGuest) {
   saleIsGuest = isGuest;
@@ -1384,6 +1503,7 @@ function fillSalePrice() {
   document.getElementById('salePrice').value = item ? item.price.toFixed(2) : '';
   document.getElementById('saleStock').textContent = item ? item.qty + ' шт.' : '—';
   updateGuestPrice();
+  updateBalanceInfo();
 }
 
 async function submitIncoming() {
@@ -1443,6 +1563,16 @@ async function submitSale() {
     document.getElementById('errSaleQty').textContent = 'Превышает остаток';
     return;
   }
+  // Проверка баланса
+  if (salePaymentMethod === 'balance') {
+    const balance = currentUser.balance || 0;
+    if (balance < qty * price) {
+      const al = document.getElementById('alertSale');
+      al.textContent = `Недостаточно средств на балансе! Баланс: ${formatNum(balance)} ₼, нужно: ${formatNum(qty * price)} ₼`;
+      al.classList.add('show');
+      return;
+    }
+  }
   showLoading(true);
   try {
     // Читаем актуальный остаток из базы перед продажей
@@ -1455,7 +1585,23 @@ async function submitSale() {
       showLoading(false);
       return;
     }
-    await dbInsertSale({ date, name, qty, price, total: qty * price, comment, seller: currentUser.name, guest });
+    await dbInsertSale({ date, name, qty, price, total: qty * price, comment, seller: currentUser.name, guest, payment_method: salePaymentMethod });
+    // Списываем баланс если оплата с баланса
+    if (salePaymentMethod === 'balance') {
+      const buyer = currentUser;
+      const newBalance = (buyer.balance || 0) - qty * price;
+      await db.from('users').update({ balance: newBalance }).eq('login', buyer.login);
+      await db.from('balance_log').insert({
+        id: Date.now(), date, login: buyer.login,
+        amount: -(qty * price),
+        comment: `Покупка: ${name} ×${qty}`,
+        admin: currentUser.name
+      });
+      // Обновляем локальный кэш
+      const u = USERS.find(u => u.login === buyer.login);
+      if (u) u.balance = newBalance;
+      currentUser.balance = newBalance;
+    }
     await dbUpsertStock({ name, qty: currentQty - qty, price: item.price, date });
     closeModal('modalSale');
     toast(`Продажа оформлена: ${name} ×${qty}${guest ? ' (гость, цена '+price+' AZN)' : ''}`, 'success');
