@@ -907,7 +907,7 @@ async function doLogin() {
       document.getElementById('loginPass').value = '';
       return;
     }
-    if (data.blocked) {
+    if (data.blocked === true) {
       document.getElementById('loginErr').textContent = 'Ваш аккаунт заблокирован. Обратитесь к администратору.';
       document.getElementById('loginErr').classList.add('show');
       document.getElementById('loginPass').value = '';
@@ -1770,7 +1770,7 @@ document.getElementById('confirmOverlay').addEventListener('click', e => {
     try {
       const s = JSON.parse(session);
       const { data, error } = await db.from('users').select('*').ilike('login', s.login).single();
-      if (data && !error) { currentUser = data; startApp(); return; }
+      if (data && !error && data.blocked !== true) { currentUser = data; startApp(); return; }
     } catch(e) {}
     localStorage.removeItem('cig_session');
   }
