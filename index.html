@@ -1147,7 +1147,7 @@ async function dbInsertIncoming(record) {
 }
 
 async function dbInsertSale(record) {
-  const payload = { id: Date.now(), date: record.date, name: record.name, qty: record.qty, price: record.price, total: record.total, comment: record.comment || '', seller: record.seller || '', guest: record.guest || false };
+  const payload = { id: Date.now(), date: record.date, name: record.name, qty: record.qty, price: record.price, total: record.total, comment: record.comment || '', seller: record.seller || '', guest: record.guest || false, payment_method: record.payment_method || 'balance' };
   console.log('insertSale:', payload);
   const { error } = await db.from('sales').insert(payload);
   if (error) { console.error('insertSale error:', error); throw new Error(error.message || error.hint || JSON.stringify(error)); }
