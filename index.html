@@ -620,6 +620,7 @@
             <th onclick="sortTable('sales','price')">Цена, AZN <span class="sort-arrow">↕</span></th>
             <th onclick="sortTable('sales','total')">Сумма, AZN <span class="sort-arrow">↕</span></th>
             <th>Комментарий</th>
+            <th id="thPaymentCol">Оплата</th>
             <th id="thSellerCol" style="display:none">Продавец</th>
             <th id="thGuestCol" style="display:none">Покупатель</th>
             <th id="thAction" style="width:80px"></th>
@@ -1354,6 +1355,10 @@ function renderSales() {
         <div style="flex:1;min-width:0;">
           <div class="marquee-wrap"><span style="font-size:14px;font-weight:700;color:var(--gold2);">${esc(r.name)}</span></div>
           <div style="font-size:11px;color:var(--text2);margin-top:1px;">${formatDate(r.date)}${r.seller ? ` · <span style="color:var(--gold2);font-weight:600;">${esc(r.seller)}</span>` : ''}</div>
+          <div style="margin-top:3px;">${r.payment_method === 'cash'
+            ? '<span style="background:rgba(46,125,50,0.2);color:#7bd99c;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;">💵 Cash</span>'
+            : '<span style="background:rgba(201,168,76,0.15);color:var(--gold);padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;">💳 Баланс</span>'
+          }</div>
         </div>
         <span style="flex-shrink:0;font-size:16px;font-weight:700;color:#e67e22;">${r.qty} шт.</span>
         <span style="flex-shrink:0;font-size:13px;color:#e8c97e;font-weight:600;">${formatNum(r.total)} ₼</span>
@@ -1367,6 +1372,10 @@ function renderSales() {
       <td class="td-price">${formatNum(r.price)}</td>
       <td class="td-total" style="color:#e8c97e">${formatNum(r.total)}</td>
       <td class="td-comment">${esc(r.comment||'—')}</td>
+      <td>${r.payment_method === 'cash'
+        ? '<span style="background:rgba(46,125,50,0.2);color:#7bd99c;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">💵 Cash</span>'
+        : '<span style="background:rgba(201,168,76,0.15);color:var(--gold);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">💳 Баланс</span>'
+      }</td>
       ${showSeller ? `<td class="td-comment" style="color:var(--gold2)">${esc(r.seller||'—')}</td>` : ''}
       ${showSeller ? `<td>${r.guest ? '<span style="background:#8B0000;color:#fff;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">🚶 Гость</span>' : '<span style="color:var(--text2);font-size:12px;">👤 Клуб</span>'}</td>` : ''}
       ${canRollback ? `<td><button class="btn-rollback" onclick="askRollback('${r.id}')">↩ Откат</button></td>` : ''}
