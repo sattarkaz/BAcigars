@@ -635,6 +635,10 @@
       <div class="toolbar"><h2>Управление пользователями</h2></div>
       <div class="admin-panel">
         <h3>Пользователи системы</h3>
+        <div id="totalBalanceInfo" style="display:flex;align-items:center;justify-content:space-between;background:rgba(201,168,76,0.08);border-radius:8px;padding:10px 14px;margin-bottom:12px;">
+          <span style="font-size:13px;color:var(--text2);">💳 Общий баланс членов клуба:</span>
+          <span id="totalBalanceVal" style="font-size:18px;font-weight:700;color:var(--gold);">—</span>
+        </div>
         <div id="userList"></div>
       </div>
       <br/>
@@ -1010,6 +1014,11 @@ function startApp() {
 // ── ADMIN PANEL ──
 async function renderAdminPanel() {
   await loadUsers();
+  // Общий баланс всех пользователей
+  const totalBalance = USERS.reduce((sum, u) => sum + (u.balance || 0), 0);
+  const totalEl = document.getElementById('totalBalanceVal');
+  if (totalEl) totalEl.textContent = formatNum(totalBalance) + ' ₼';
+
   const rClass = { admin: 'role-admin', manager: 'role-manager', viewer: 'role-viewer' };
   const rLabel = { admin: 'Администратор', manager: 'Менеджер', viewer: 'Просмотр' };
 
