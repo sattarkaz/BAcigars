@@ -982,6 +982,29 @@ function startApp() {
   // init mobile FAB for default tab (stock)
   switchTab('stock');
   document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+
+  // ── REALTIME подписки ──
+  // Авто-обновление при изменении данных другими пользователями
+  db.channel('realtime-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'stock' }, () => {
+      dbLoad();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, () => {
+      dbLoad();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'incoming' }, () => {
+      dbLoad();
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users',
+      filter: `login=eq.${currentUser.login}` }, (payload) => {
+      // Обновляем баланс текущего пользователя в реальном времени
+      if (payload.new && payload.new.balance !== undefined) {
+        currentUser.balance = payload.new.balance;
+        updateHeaderBalance();
+        updateBalanceInfo();
+      }
+    })
+    .subscribe();
 }
 
 // ── ADMIN PANEL ──
@@ -1599,48 +1622,35 @@ async function submitSale() {
     document.getElementById('errSaleQty').textContent = 'Превышает остаток';
     return;
   }
-  // Проверка баланса
-  if (salePaymentMethod === 'balance') {
-    const balance = currentUser.balance || 0;
-    if (balance < qty * price) {
-      const al = document.getElementById('alertSale');
-      al.textContent = `Недостаточно средств на балансе! Баланс: ${formatNum(balance)} ₼, нужно: ${formatNum(qty * price)} ₼`;
-      al.classList.add('show');
-      return;
-    }
-  }
   showLoading(true);
   try {
-    // Читаем актуальный остаток из базы перед продажей
-    const { data: freshStock } = await db.from('stock').select('qty,price').eq('name', name).single();
-    const currentQty = freshStock ? freshStock.qty : item.qty;
-    if (currentQty < qty) {
+    // Атомарный вызов RPC — защита от race condition
+    const { data: result, error: rpcError } = await db.rpc('sell_cigar', {
+      p_name: name,
+      p_qty: qty,
+      p_price: price,
+      p_date: date,
+      p_comment: comment,
+      p_seller: currentUser.name,
+      p_guest: guest,
+      p_payment_method: salePaymentMethod,
+      p_buyer_login: currentUser.login
+    });
+    if (rpcError) throw new Error(rpcError.message);
+    if (result && result.error) {
       const al = document.getElementById('alertSale');
-      al.textContent = `Недостаточно сигар! В наличии: ${currentQty} шт., запрошено: ${qty} шт.`;
+      al.textContent = result.error;
       al.classList.add('show');
       showLoading(false);
       return;
     }
-    await dbInsertSale({ date, name, qty, price, total: qty * price, comment, seller: currentUser.name, guest, payment_method: salePaymentMethod });
-    // Списываем баланс если оплата с баланса
-    if (salePaymentMethod === 'balance') {
-      const buyer = currentUser;
-      const newBalance = (buyer.balance || 0) - qty * price;
-      await db.from('users').update({ balance: newBalance }).eq('login', buyer.login);
-      try {
-        await db.from('balance_log').insert({
-          id: Date.now(), date, login: buyer.login,
-          amount: -(qty * price),
-          comment: `Покупка: ${name} ×${qty}`,
-          admin: currentUser.name
-        });
-      } catch(e) { console.warn('balance_log insert failed:', e); }
-      const u = USERS.find(u => u.login === buyer.login);
-      if (u) u.balance = newBalance;
-      currentUser.balance = newBalance;
+    // Обновляем баланс локально
+    if (salePaymentMethod === 'balance' && result.new_balance !== null) {
+      currentUser.balance = result.new_balance;
+      const u = USERS.find(u => u.login === currentUser.login);
+      if (u) u.balance = result.new_balance;
       updateHeaderBalance();
     }
-    await dbUpsertStock({ name, qty: currentQty - qty, price: item.price, date });
     closeModal('modalSale');
     toast(`Продажа оформлена: ${name} ×${qty}${guest ? ' (гость, цена '+price+' AZN)' : ''}`, 'success');
     await dbLoad();
