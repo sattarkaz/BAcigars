@@ -1883,9 +1883,6 @@ async function confirmRollback() {
 
     // Если оплата была с баланса — возвращаем деньги
     if (sale.payment_method === 'balance' && sale.seller) {
-      const { data: userData } = await db.from('users').select('balance,login').eq('name', sale.seller).single()
-        .catch(() => ({ data: null }));
-      // Ищем по имени продавца среди пользователей
       const sellerUser = USERS.find(u => u.name === sale.seller);
       if (sellerUser) {
         const balBefore = sellerUser.balance || 0;
@@ -1903,7 +1900,6 @@ async function confirmRollback() {
             amount: sale.total, balance_before: balBefore, balance_after: balAfter
           });
         } catch(e) { console.warn('log error:', e); }
-        // Обновляем локальный кэш
         sellerUser.balance = balAfter;
         if (currentUser.login === sellerUser.login) {
           currentUser.balance = balAfter;
