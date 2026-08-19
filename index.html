@@ -674,7 +674,25 @@
         </div>
         <button class="btn btn-primary btn-sm" onclick="applyBalanceChange()">Применить</button>
       </div>
-    </div>
+      <br/>
+      <div class="admin-panel" style="margin-top:0">
+        <h3>📋 История действий</h3>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+          <select id="activityFilterUser" class="filter-select" onchange="renderActivityLog()" style="flex:1;min-width:160px;">
+            <option value="">Все пользователи</option>
+          </select>
+          <select id="activityFilterAction" class="filter-select" onchange="renderActivityLog()" style="flex:1;min-width:160px;">
+            <option value="">Все действия</option>
+            <option value="purchase">Покупки с баланса</option>
+            <option value="purchase_cash">Покупки cash</option>
+            <option value="topup">Пополнения</option>
+            <option value="deduct">Списания</option>
+            <option value="rollback">Возвраты</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('activityFilterUser').value='';document.getElementById('activityFilterAction').value='';renderActivityLog()">Сбросить</button>
+        </div>
+        <div id="activityList" style="max-height:400px;overflow-y:auto;"></div>
+      </div>
 
   </div><!-- /main -->
 </div><!-- /app -->
@@ -1052,6 +1070,14 @@ async function renderAdminPanel() {
     `<option value="${esc(u.login)}">${esc(u.name)} — ${formatNum(u.balance||0)} ₼</option>`
   ).join('');
   showUserBalance();
+
+  // Загружаем историю и заполняем фильтр
+  await loadActivityLog();
+  const actUserSel = document.getElementById('activityFilterUser');
+  const curVal = actUserSel.value;
+  actUserSel.innerHTML = '<option value="">Все пользователи</option>' +
+    USERS.map(u => `<option value="${esc(u.login)}" ${u.login===curVal?'selected':''}>${esc(u.name)}</option>`).join('');
+  renderActivityLog();
 }
 
 async function toggleBlock(login, block) {
@@ -1099,12 +1125,61 @@ async function applyBalanceChange() {
       amount, comment: comment || (amount > 0 ? 'Пополнение' : 'Списание'),
       admin: currentUser.name
     });
+    await db.from('activity_log').insert({
+      id: Date.now() + 1, date: todayStr(), login,
+      action: amount > 0 ? 'topup' : 'deduct',
+      description: (amount > 0 ? 'Пополнение баланса' : 'Списание с баланса') + (comment ? ': ' + comment : '') + ' (администратор: ' + currentUser.name + ')',
+      amount, balance_before: user.balance || 0, balance_after: newBalance
+    });
   } catch(e) { console.warn('balance_log:', e); }
   user.balance = newBalance;
   document.getElementById('balanceChange').value = '';
   document.getElementById('balanceComment').value = '';
   await renderAdminPanel();
   toast(`Баланс ${user.name} ${amount > 0 ? 'пополнен на' : 'уменьшен на'} ${formatNum(Math.abs(amount))} ₼`, 'success');
+}
+
+let activityLog = [];
+
+async function loadActivityLog() {
+  const { data, error } = await db.from('activity_log').select('*').order('id', { ascending: false }).limit(200);
+  if (!error) activityLog = data || [];
+}
+
+function renderActivityLog() {
+  const filterUser = document.getElementById('activityFilterUser').value;
+  const filterAction = document.getElementById('activityFilterAction').value;
+
+  let data = activityLog;
+  if (filterUser) data = data.filter(r => r.login === filterUser);
+  if (filterAction) data = data.filter(r => r.action === filterAction || (filterAction === 'rollback' && r.action === 'rollback_cash'));
+
+  const actionIcon = { purchase: '🛒', purchase_cash: '💵', topup: '💳', deduct: '➖', rollback: '↩', rollback_cash: '↩' };
+  const actionColor = { purchase: '#e67e22', purchase_cash: '#e67e22', topup: '#7bd99c', deduct: '#e07070', rollback: 'var(--gold)', rollback_cash: 'var(--gold)' };
+
+  const el = document.getElementById('activityList');
+  if (!data.length) { el.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px;">Нет записей</div>'; return; }
+
+  el.innerHTML = data.map(r => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);">
+      <div style="flex-shrink:0;font-size:20px;">${actionIcon[r.action] || '📌'}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${esc(r.description || '')}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px;">
+          ${esc(r.login)} · ${r.date || ''}
+          ${r.balance_before !== null && r.balance_before !== undefined
+            ? ` · <span style="color:var(--text2);">было: ${formatNum(r.balance_before)} ₼</span>`
+            : ''}
+          ${r.balance_after !== null && r.balance_after !== undefined
+            ? ` → <span style="color:${actionColor[r.action]};">${formatNum(r.balance_after)} ₼</span>`
+            : ''}
+        </div>
+      </div>
+      <div style="flex-shrink:0;font-size:14px;font-weight:700;color:${actionColor[r.action] || 'var(--text)'};">
+        ${r.amount > 0 ? '+' : ''}${r.amount !== null ? formatNum(r.amount) + ' ₼' : ''}
+      </div>
+    </div>
+  `).join('');
 }
 
 async function changePassword() {
@@ -1801,12 +1876,55 @@ async function confirmRollback() {
 
   showLoading(true);
   try {
+    // Возвращаем сигары на склад
     const item = stock.find(r => r.name === sale.name);
     const newQty = item ? item.qty + sale.qty : sale.qty;
     await dbUpsertStock({ name: sale.name, qty: newQty, price: item ? item.price : sale.price, date: todayStr() });
+
+    // Если оплата была с баланса — возвращаем деньги
+    if (sale.payment_method === 'balance' && sale.seller) {
+      const { data: userData } = await db.from('users').select('balance,login').eq('name', sale.seller).single()
+        .catch(() => ({ data: null }));
+      // Ищем по имени продавца среди пользователей
+      const sellerUser = USERS.find(u => u.name === sale.seller);
+      if (sellerUser) {
+        const balBefore = sellerUser.balance || 0;
+        const balAfter = balBefore + sale.total;
+        await db.from('users').update({ balance: balAfter }).eq('login', sellerUser.login);
+        try {
+          await db.from('balance_log').insert({
+            id: Date.now(), date: todayStr(), login: sellerUser.login,
+            amount: sale.total, comment: `Возврат: ${sale.name} ×${sale.qty}`, admin: currentUser.name
+          });
+          await db.from('activity_log').insert({
+            id: Date.now() + 1, date: todayStr(), login: sellerUser.login,
+            action: 'rollback',
+            description: `Возврат покупки: ${sale.name} ×${sale.qty}`,
+            amount: sale.total, balance_before: balBefore, balance_after: balAfter
+          });
+        } catch(e) { console.warn('log error:', e); }
+        // Обновляем локальный кэш
+        sellerUser.balance = balAfter;
+        if (currentUser.login === sellerUser.login) {
+          currentUser.balance = balAfter;
+          updateHeaderBalance();
+        }
+      }
+    } else {
+      // Cash возврат — только лог
+      try {
+        await db.from('activity_log').insert({
+          id: Date.now(), date: todayStr(), login: sale.seller || '',
+          action: 'rollback_cash',
+          description: `Возврат покупки (cash): ${sale.name} ×${sale.qty}`,
+          amount: sale.total, balance_before: null, balance_after: null
+        });
+      } catch(e) { console.warn('log error:', e); }
+    }
+
     await dbDeleteSale(sale.id);
     closeConfirm();
-    toast('Продажа откатана: ' + sale.name + ' × ' + sale.qty + ' шт. возвращено на склад', 'success');
+    toast(`Продажа откатана: ${sale.name} ×${sale.qty} шт. возвращено на склад`, 'success');
     await dbLoad();
   } catch(e) {
     toast('Ошибка: ' + e.message, 'error');
