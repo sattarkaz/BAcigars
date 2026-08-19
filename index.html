@@ -1878,8 +1878,10 @@ async function confirmRollback() {
   try {
     // Возвращаем сигары на склад
     const item = stock.find(r => r.name === sale.name);
-    const newQty = item ? item.qty + sale.qty : sale.qty;
+    const qtyBefore = item ? item.qty : 0;
+    const newQty = qtyBefore + sale.qty;
     await dbUpsertStock({ name: sale.name, qty: newQty, price: item ? item.price : sale.price, date: todayStr() });
+    const stockNote = ` | склад: ${qtyBefore} → ${newQty} шт.`;
 
     // Если оплата была с баланса — возвращаем деньги
     if (sale.payment_method === 'balance' && sale.seller) {
@@ -1896,7 +1898,7 @@ async function confirmRollback() {
           await db.from('activity_log').insert({
             id: Date.now() + 1, date: todayStr(), login: sellerUser.login,
             action: 'rollback',
-            description: `Возврат покупки: ${sale.name} ×${sale.qty}`,
+            description: `Возврат покупки: ${sale.name} ×${sale.qty}${stockNote}`,
             amount: sale.total, balance_before: balBefore, balance_after: balAfter
           });
         } catch(e) { console.warn('log error:', e); }
@@ -1912,7 +1914,7 @@ async function confirmRollback() {
         await db.from('activity_log').insert({
           id: Date.now(), date: todayStr(), login: sale.seller || '',
           action: 'rollback_cash',
-          description: `Возврат покупки (cash): ${sale.name} ×${sale.qty}`,
+          description: `Возврат покупки (cash): ${sale.name} ×${sale.qty}${stockNote}`,
           amount: sale.total, balance_before: null, balance_after: null
         });
       } catch(e) { console.warn('log error:', e); }
