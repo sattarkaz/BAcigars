@@ -1240,15 +1240,10 @@ function updateHeaderBalance() {
   const el = document.getElementById('headerBalance');
   const btn = document.getElementById('btnTransfer');
   if (!el || !currentUser) return;
-  if (currentUser.role !== 'admin') {
-    const bal = currentUser.balance || 0;
-    el.textContent = '💳 ' + formatNum(bal) + ' ₼';
-    el.style.display = '';
-    if (btn) btn.style.display = '';
-  } else {
-    el.style.display = 'none';
-    if (btn) btn.style.display = 'none';
-  }
+  const bal = currentUser.balance || 0;
+  el.textContent = '💳 ' + formatNum(bal) + ' ₼';
+  el.style.display = '';
+  if (btn) btn.style.display = '';
 }
 
 function showUserBalance() {
