@@ -499,6 +499,7 @@
         <span class="uname" id="headerUser">—</span>
         <span class="urole" id="headerRole"></span>
         <span id="headerBalance" style="display:none;font-size:11px;color:#7bd99c;font-weight:700;"></span>
+        <button id="btnTransfer" onclick="openTransfer()" style="display:none;padding:4px 8px;font-size:11px;border-radius:6px;border:1px solid #7bd99c;background:rgba(123,217,156,0.1);color:#7bd99c;cursor:pointer;">⇄ Перевод</button>
       </div>
       <button class="btn-logout" onclick="doLogout()">Выйти</button>
     </div>
@@ -698,6 +699,8 @@
             <option value="topup">Пополнения</option>
             <option value="deduct">Списания</option>
             <option value="rollback">Возвраты</option>
+            <option value="transfer_out">Переводы (исходящие)</option>
+            <option value="transfer_in">Переводы (входящие)</option>
           </select>
           <button class="btn btn-secondary btn-sm" onclick="document.getElementById('activityFilterUser').value='';document.getElementById('activityFilterAction').value='';renderActivityLog()">Сбросить</button>
         </div>
@@ -892,6 +895,54 @@
 <div class="mobile-fab-bar" id="mobileFabBar">
   <button class="btn btn-primary" id="mobileBtnIncoming" onclick="openIncoming()" style="display:none">+ Поступление</button>
   <button class="btn btn-danger" id="mobileBtnSale" onclick="openSale()" style="display:none">− Продажа</button>
+</div>
+
+<!-- TRANSFER MODAL -->
+<div class="modal-overlay" id="modalTransfer">
+  <div class="modal">
+    <div class="modal-drag"></div>
+    <h2>⇄ Перевод баланса</h2>
+    <div class="modal-alert" id="alertTransfer"></div>
+    <div class="form-group">
+      <label>Кому перевести</label>
+      <select id="transferTo" class="filter-select" style="width:100%" onchange="updateTransferInfo()">
+        <option value="">— выберите получателя —</option>
+      </select>
+    </div>
+    <div id="transferBalanceInfo" style="display:none;background:rgba(201,168,76,0.08);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;">
+        <span style="font-size:12px;color:var(--text2);">Ваш баланс:</span>
+        <span id="transferFromBal" style="font-size:14px;font-weight:700;color:var(--gold);"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <span style="font-size:12px;color:var(--text2);">Баланс получателя:</span>
+        <span id="transferToBal" style="font-size:14px;font-weight:700;color:#7bd99c;"></span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Сумма перевода, AZN *</label>
+      <input type="number" id="transferAmount" min="0.01" step="0.01" inputmode="decimal"
+        placeholder="Введите сумму" oninput="updateTransferInfo()"/>
+    </div>
+    <div id="transferAfterInfo" style="display:none;background:rgba(123,217,156,0.06);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;">
+        <span style="font-size:12px;color:var(--text2);">Ваш остаток:</span>
+        <span id="transferFromAfter" style="font-size:14px;font-weight:700;"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <span style="font-size:12px;color:var(--text2);">Станет у получателя:</span>
+        <span id="transferToAfter" style="font-size:14px;font-weight:700;color:#7bd99c;"></span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Комментарий</label>
+      <input type="text" id="transferComment" placeholder="Необязательно"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modalTransfer')">Отмена</button>
+      <button class="btn btn-primary" onclick="submitTransfer()">Перевести</button>
+    </div>
+  </div>
 </div>
 
 <div id="loadingOverlay" style="display:none"><div class="spinner"></div><div class="loading-text">Загрузка данных...</div></div>
@@ -1097,15 +1148,106 @@ async function toggleBlock(login, block) {
   toast(block ? `Пользователь ${login} заблокирован` : `Пользователь ${login} разблокирован`, 'success');
 }
 
+function openTransfer() {
+  // Заполняем список получателей (все кроме себя)
+  const sel = document.getElementById('transferTo');
+  sel.innerHTML = '<option value="">— выберите получателя —</option>' +
+    USERS.filter(u => u.login !== currentUser.login && u.role !== 'viewer' && u.blocked !== true)
+      .map(u => `<option value="${esc(u.login)}">${esc(u.name)}</option>`).join('');
+  document.getElementById('transferAmount').value = '';
+  document.getElementById('transferComment').value = '';
+  document.getElementById('transferBalanceInfo').style.display = 'none';
+  document.getElementById('transferAfterInfo').style.display = 'none';
+  document.getElementById('alertTransfer').classList.remove('show');
+  updateTransferInfo();
+  document.getElementById('modalTransfer').classList.add('open');
+}
+
+function updateTransferInfo() {
+  const toLogin = document.getElementById('transferTo').value;
+  const amount = parseFloat(document.getElementById('transferAmount').value) || 0;
+  const toUser = USERS.find(u => u.login === toLogin);
+  const fromBal = currentUser.balance || 0;
+  const toBal = toUser ? (toUser.balance || 0) : 0;
+
+  if (toUser) {
+    document.getElementById('transferFromBal').textContent = formatNum(fromBal) + ' ₼';
+    document.getElementById('transferToBal').textContent = formatNum(toBal) + ' ₼';
+    document.getElementById('transferBalanceInfo').style.display = '';
+  } else {
+    document.getElementById('transferBalanceInfo').style.display = 'none';
+  }
+
+  if (toUser && amount > 0) {
+    const fromAfter = fromBal - amount;
+    const toAfter = toBal + amount;
+    const fromEl = document.getElementById('transferFromAfter');
+    fromEl.textContent = formatNum(fromAfter) + ' ₼';
+    fromEl.style.color = fromAfter < 0 ? '#c0392b' : 'var(--gold)';
+    document.getElementById('transferToAfter').textContent = formatNum(toAfter) + ' ₼';
+    document.getElementById('transferAfterInfo').style.display = '';
+  } else {
+    document.getElementById('transferAfterInfo').style.display = 'none';
+  }
+}
+
+async function submitTransfer() {
+  const toLogin = document.getElementById('transferTo').value;
+  const amount = parseFloat(document.getElementById('transferAmount').value);
+  const comment = document.getElementById('transferComment').value.trim();
+  const al = document.getElementById('alertTransfer');
+  al.classList.remove('show');
+
+  if (!toLogin) { al.textContent = 'Выберите получателя'; al.classList.add('show'); return; }
+  if (!amount || amount <= 0) { al.textContent = 'Введите сумму'; al.classList.add('show'); return; }
+  if (amount > (currentUser.balance || 0)) {
+    al.textContent = `Недостаточно средств! Ваш баланс: ${formatNum(currentUser.balance || 0)} ₼`;
+    al.classList.add('show');
+    return;
+  }
+
+  showLoading(true);
+  try {
+    const { data: result, error } = await db.rpc('transfer_balance', {
+      p_from_login: currentUser.login,
+      p_to_login: toLogin,
+      p_amount: amount,
+      p_comment: comment
+    });
+    if (error) throw new Error(error.message);
+    if (result && result.error) { al.textContent = result.error; al.classList.add('show'); return; }
+
+    // Обновляем локальный баланс
+    currentUser.balance = result.new_balance;
+    const me = USERS.find(u => u.login === currentUser.login);
+    if (me) me.balance = result.new_balance;
+    const toUser = USERS.find(u => u.login === toLogin);
+    if (toUser) toUser.balance = (toUser.balance || 0) + amount;
+    updateHeaderBalance();
+
+    closeModal('modalTransfer');
+    toast(`Перевод ${formatNum(amount)} ₼ выполнен`, 'success');
+    await dbLoad();
+  } catch(e) {
+    al.textContent = 'Ошибка: ' + e.message;
+    al.classList.add('show');
+  } finally {
+    showLoading(false);
+  }
+}
+
 function updateHeaderBalance() {
   const el = document.getElementById('headerBalance');
+  const btn = document.getElementById('btnTransfer');
   if (!el || !currentUser) return;
   if (currentUser.role !== 'admin') {
     const bal = currentUser.balance || 0;
     el.textContent = '💳 ' + formatNum(bal) + ' ₼';
     el.style.display = '';
+    if (btn) btn.style.display = '';
   } else {
     el.style.display = 'none';
+    if (btn) btn.style.display = 'none';
   }
 }
 
@@ -1162,10 +1304,15 @@ function renderActivityLog() {
 
   let data = activityLog;
   if (filterUser) data = data.filter(r => r.login === filterUser);
-  if (filterAction) data = data.filter(r => r.action === filterAction || (filterAction === 'rollback' && r.action === 'rollback_cash'));
+  if (filterAction) data = data.filter(r =>
+    r.action === filterAction ||
+    (filterAction === 'rollback' && r.action === 'rollback_cash') ||
+    (filterAction === 'transfer_out' && r.action === 'transfer_out') ||
+    (filterAction === 'transfer_in' && r.action === 'transfer_in')
+  );
 
-  const actionIcon = { purchase: '🛒', purchase_cash: '💵', topup: '💳', deduct: '➖', rollback: '↩', rollback_cash: '↩' };
-  const actionColor = { purchase: '#e67e22', purchase_cash: '#e67e22', topup: '#7bd99c', deduct: '#e07070', rollback: 'var(--gold)', rollback_cash: 'var(--gold)' };
+  const actionIcon = { purchase: '🛒', purchase_cash: '💵', topup: '💳', deduct: '➖', rollback: '↩', rollback_cash: '↩', transfer_out: '→', transfer_in: '←' };
+  const actionColor = { purchase: '#e67e22', purchase_cash: '#e67e22', topup: '#7bd99c', deduct: '#e07070', rollback: 'var(--gold)', rollback_cash: 'var(--gold)', transfer_out: '#e07070', transfer_in: '#7bd99c' };
 
   const el = document.getElementById('activityList');
   if (!data.length) { el.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px;">Нет записей</div>'; return; }
