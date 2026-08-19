@@ -415,7 +415,14 @@
   .marquee-wrap.overflow span { animation-play-state: running; }
   .marquee-wrap:not(.overflow) span { padding-right: 0; }
 
-  /* Mobile FAB bar hidden on desktop */
+  .btn-refresh {
+    background: none; border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text2); padding: 6px 10px; font-size: 16px; cursor: pointer;
+    transition: transform 0.4s ease; flex-shrink: 0;
+  }
+  .btn-refresh:hover { color: var(--gold); border-color: var(--gold); }
+  .btn-refresh.spinning { animation: spin 0.6s linear; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   .mobile-fab-bar { display: none; }
 
 
@@ -539,6 +546,7 @@
         <button class="btn btn-primary" id="btnAddIncoming" onclick="openIncoming()">+ Поступление</button>
         <button class="btn btn-danger" id="btnAddSale" onclick="openSale()">− Продажа</button>
         <input class="search-input" placeholder="Поиск..." id="searchStock" oninput="renderStock()"/>
+        <button class="btn-refresh" onclick="refreshAll(this)" title="Обновить">🔄</button>
       </div>
       <div class="filters">
         <span class="filter-label">Фильтр:</span>
@@ -572,6 +580,7 @@
         <h2>История поступлений</h2>
         <button class="btn btn-primary" id="btnAddIncoming2" onclick="openIncoming()">+ Поступление</button>
         <input class="search-input" placeholder="Поиск..." id="searchIncoming" oninput="renderIncoming()"/>
+        <button class="btn-refresh" onclick="refreshAll(this)" title="Обновить">🔄</button>
       </div>
       <div class="filters">
         <span class="filter-label">Фильтр:</span>
@@ -602,6 +611,7 @@
         <h2>История продаж</h2>
         <button class="btn btn-danger" id="btnAddSale2" onclick="openSale()">− Продажа</button>
         <input class="search-input" placeholder="Поиск..." id="searchSales" oninput="renderSales()"/>
+        <button class="btn-refresh" onclick="refreshAll(this)" title="Обновить">🔄</button>
       </div>
       <div class="filters">
         <span class="filter-label">Фильтр:</span>
@@ -632,7 +642,7 @@
 
     <!-- ADMIN -->
     <div class="panel" id="panel-admin">
-      <div class="toolbar"><h2>Управление пользователями</h2></div>
+      <div class="toolbar"><h2>Управление пользователями</h2><button class="btn-refresh" onclick="refreshAll(this)" title="Обновить">🔄</button></div>
       <div class="admin-panel">
         <h3>Пользователи системы</h3>
         <div id="totalBalanceInfo" style="display:flex;align-items:center;justify-content:space-between;background:rgba(201,168,76,0.08);border-radius:8px;padding:10px 14px;margin-bottom:12px;">
@@ -1525,6 +1535,15 @@ function refreshNameFilters() {
     stock.filter(r => r.qty > 0 && !r.locked).map(r =>
       `<option value="${esc(r.name)}" ${r.name===cur?'selected':''} >${esc(r.name)} (${r.qty} шт.)</option>`
     ).join('');
+}
+
+async function refreshAll(btn) {
+  if (btn) {
+    btn.classList.add('spinning');
+    setTimeout(() => btn.classList.remove('spinning'), 600);
+  }
+  await dbLoad();
+  if (IS_ADMIN(currentUser)) await renderAdminPanel();
 }
 
 function checkMarquee() {
