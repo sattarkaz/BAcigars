@@ -2049,51 +2049,23 @@ async function confirmRollback() {
 
   showLoading(true);
   try {
-    // Возвращаем сигары на склад
-    const item = stock.find(r => r.name === sale.name);
-    const qtyBefore = item ? item.qty : 0;
-    const newQty = qtyBefore + sale.qty;
-    await dbUpsertStock({ name: sale.name, qty: newQty, price: item ? item.price : sale.price, date: todayStr() });
-    const stockNote = ` | склад: ${qtyBefore} → ${newQty} шт.`;
+    const { data: result, error } = await db.rpc('rollback_sale', {
+      p_sale_id: sale.id,
+      p_admin_login: currentUser.login,
+      p_admin_name: currentUser.name
+    });
+    if (error) throw new Error(error.message);
+    if (result && result.error) { toast('Ошибка: ' + result.error, 'error'); return; }
 
-    // Если оплата была с баланса — возвращаем деньги
-    if (sale.payment_method === 'balance' && sale.seller) {
-      const sellerUser = USERS.find(u => u.name === sale.seller);
-      if (sellerUser) {
-        const balBefore = sellerUser.balance || 0;
-        const balAfter = balBefore + sale.total;
-        await db.from('users').update({ balance: balAfter }).eq('login', sellerUser.login);
-        try {
-          await db.from('balance_log').insert({
-            id: Date.now(), date: todayStr(), login: sellerUser.login,
-            amount: sale.total, comment: `Возврат: ${sale.name} ×${sale.qty}`, admin: currentUser.name
-          });
-          await db.from('activity_log').insert({
-            id: Date.now() + 1, date: todayStr(), login: sellerUser.login,
-            action: 'rollback',
-            description: `Возврат покупки: ${sale.name} ×${sale.qty}${stockNote}`,
-            amount: sale.total, balance_before: balBefore, balance_after: balAfter
-          });
-        } catch(e) { console.warn('log error:', e); }
-        sellerUser.balance = balAfter;
-        if (currentUser.login === sellerUser.login) {
-          currentUser.balance = balAfter;
-          updateHeaderBalance();
-        }
+    if (result.seller_login && result.new_balance !== null) {
+      const sellerUser = USERS.find(u => u.login === result.seller_login);
+      if (sellerUser) sellerUser.balance = result.new_balance;
+      if (currentUser.login === result.seller_login) {
+        currentUser.balance = result.new_balance;
+        updateHeaderBalance();
       }
-    } else {
-      // Cash возврат — только лог
-      try {
-        await db.from('activity_log').insert({
-          id: Date.now(), date: todayStr(), login: sale.seller || '',
-          action: 'rollback_cash',
-          description: `Возврат покупки (cash): ${sale.name} ×${sale.qty}${stockNote}`,
-          amount: sale.total, balance_before: null, balance_after: null
-        });
-      } catch(e) { console.warn('log error:', e); }
     }
 
-    await dbDeleteSale(sale.id);
     closeConfirm();
     toast(`Продажа откатана: ${sale.name} ×${sale.qty} шт. возвращено на склад`, 'success');
     await dbLoad();
