@@ -88,9 +88,6 @@
   }
   .user-badge .uname { font-size: 12px; color: var(--gold2); font-weight: 600; }
   .user-badge .urole { font-size: 10px; color: var(--text2); }
-  .user-badge.is-guest { border-color: #2980b9; background: rgba(41,128,185,0.12); }
-  .user-badge.is-guest .uname { color: #5dade2; }
-  .user-badge.is-guest .urole { color: #85c1e9; }
   .btn-logout {
     background: none; border: 1px solid var(--border); border-radius: 8px;
     color: var(--text2); padding: 6px 10px; font-size: 12px; cursor: pointer;
@@ -179,7 +176,7 @@
 
   /* ── TABLE ── */
   .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 520px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 620px; }
   thead tr { border-bottom: 2px solid var(--gold); }
   thead th {
     text-align: left; padding: 9px 12px; color: var(--gold2);
@@ -261,6 +258,9 @@
   .role-manager { background: rgba(39,174,96,0.15); color: #7bd99c; border: 1px solid #27ae60; }
   .role-viewer { background: rgba(184,168,138,0.15); color: var(--text2); border: 1px solid var(--border); }
   .role-guest { background: rgba(52,152,219,0.15); color: #5dade2; border: 1px solid #2980b9; }
+  .user-badge.is-guest { border-color: #2980b9; background: rgba(41,128,185,0.12); }
+  .user-badge.is-guest .uname { color: #5dade2; }
+  .user-badge.is-guest .urole { color: #85c1e9; }
   .btn-buy-guest {
     background: linear-gradient(135deg, #2980b9, #1a5276);
     color: #fff; border: none; border-radius: 6px;
@@ -296,26 +296,145 @@
 
   /* ── MOBILE ── */
   @media (max-width: 639px) {
-    .dashboard { grid-template-columns: 1fr 1fr; gap: 10px; }
-    .stat-card .value { font-size: 20px; }
+    /* Prevent horizontal overflow */
+    body { overflow-x: hidden; }
+    * { box-sizing: border-box; }
+
+    /* Header compact */
+    header { padding: 10px 12px; gap: 8px; }
+    .header-logo { width: 36px; height: 36px; }
+    header h1 { font-size: 13px; }
+    header p { display: none; }
     .user-badge .urole { display: none; }
-    header h1 { font-size: 14px; }
-    .toolbar { gap: 8px; }
-    .search-input { width: 100%; order: 10; }
-    .toolbar .btn { flex: 1; }
+    #dbStatus { display: none !important; }
+    .btn-logout { padding: 5px 8px; font-size: 11px; }
+
+    /* Dashboard: 3 карточки в одну строку */
+    .dashboard { grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 10px 10px 0; }
+    .dashboard .stat-card:last-child { display: none; }
+    .stat-card { padding: 8px 8px; }
+    .stat-card::before { width: 3px; }
+    .stat-card .label { font-size: 8px; letter-spacing: 0.3px; }
+    .stat-card .value { font-size: 15px; }
+    .stat-card .sub { font-size: 9px; }
+
+    /* Tabs */
+    .tabs { padding: 10px 10px 0; gap: 3px; }
+    .tab-btn { padding: 7px 10px; font-size: 11px; }
+
+    /* Main */
+    .main { margin: 0 8px 14px; padding: 10px 8px; border-radius: 0 8px 8px 8px; }
+
+    /* Toolbar */
+    .toolbar { flex-wrap: nowrap; gap: 6px; margin-bottom: 10px; }
+    .toolbar h2 { display: none; }
+    #btnAddIncoming, #btnAddSale, #btnAddIncoming2, #btnAddSale2 { display: none !important; }
+    .search-input { width: 100%; }
+
+    /* Filters */
     .filters { gap: 6px; }
     .filter-date { font-size: 11px; padding: 6px 8px; }
-    table { font-size: 12px; }
-    tbody td { padding: 8px 10px; }
+
+    /* Bottom FAB */
+    .mobile-fab-bar {
+      display: flex !important;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--bg2); border-top: 1px solid var(--gold);
+      padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+      gap: 10px; z-index: 500;
+    }
+    .mobile-fab-bar .btn { flex: 1; padding: 13px; font-size: 14px; }
+    body { padding-bottom: 80px; }
+
+    /* Modals */
     .modal-actions .btn { padding: 12px; font-size: 14px; }
+
+    /* ── КАРТОЧКИ ── */
+    .table-wrap { overflow-x: hidden; width: 100%; }
+    table { width: 100%; table-layout: fixed; }
+    table, thead, tbody, th, td, tr { display: block; }
+    thead { display: none; }
+
+    tbody tr {
+      width: 100%;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; margin-bottom: 6px; padding: 10px 10px;
+      display: flex; flex-direction: row;
+      align-items: center; gap: 6px;
+      overflow: hidden;
+    }
+    tbody tr:hover { background: rgba(201,168,76,0.06); }
+    tbody td { padding: 0; border: none; font-size: 13px; }
+
+    /* СКЛАД: [название flex] [кол-во] [кнопка] */
+    #bodyStock tr { display: flex !important; align-items: center; gap: 8px; }
+    #bodyStock tr td { display: block !important; flex-shrink: 0; }
+    #bodyStock tr td:nth-child(1) { display: block !important; flex: 1 !important; font-size: 13px; font-weight: 700; color: var(--gold2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    #bodyStock tr td:nth-child(2) { display: block !important; font-size: 16px; font-weight: 700; min-width: 28px; text-align: right; }
+    #bodyStock tr td:nth-child(3) { display: none !important; }
+    #bodyStock tr td:nth-child(4) { display: none !important; }
+    #bodyStock tr td:nth-child(5) { display: none !important; }
+    #bodyStock tr td:nth-child(6) { display: none !important; }
+    #bodyStock tr td:nth-child(7) { display: block !important; }
+    #bodyStock tr td:nth-child(7) .btn-edit { padding: 5px 8px; font-size: 11px; white-space: nowrap; }
+
+    /* ПОСТУПЛЕНИЯ */
+    #bodyIncoming tr { display: flex !important; align-items: center; gap: 8px; }
+    #bodyIncoming tr td { display: block !important; flex-shrink: 0; }
+    #bodyIncoming tr td:nth-child(1) { display: block !important; font-size: 10px; color: var(--text2); order: 2; }
+    #bodyIncoming tr td:nth-child(2) { display: block !important; flex: 1 !important; font-size: 13px; font-weight: 700; color: var(--gold2); order: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    #bodyIncoming tr td:nth-child(3) { display: block !important; font-size: 15px; font-weight: 700; order: 3; min-width: 24px; text-align: right; }
+    #bodyIncoming tr td:nth-child(4) { display: none !important; }
+    #bodyIncoming tr td:nth-child(5) { display: block !important; font-size: 12px; color: #7bd99c; font-weight: 600; order: 4; }
+    #bodyIncoming tr td:nth-child(6) { display: none !important; }
+
+    /* ПРОДАЖИ */
+    #bodySales tr { display: flex !important; align-items: center; gap: 8px; }
+    #bodySales tr td { display: block !important; flex-shrink: 0; }
+    #bodySales tr td:nth-child(1) { display: block !important; font-size: 10px; color: var(--text2); order: 2; }
+    #bodySales tr td:nth-child(2) { display: block !important; flex: 1 !important; font-size: 13px; font-weight: 700; color: var(--gold2); order: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    #bodySales tr td:nth-child(3) { display: block !important; font-size: 15px; font-weight: 700; color: #e67e22; order: 3; }
+    #bodySales tr td:nth-child(4) { display: none !important; }
+    #bodySales tr td:nth-child(5) { display: block !important; font-size: 12px; color: #e8c97e; font-weight: 600; order: 4; }
+    #bodySales tr td:nth-child(6) { display: none !important; }
+    #bodySales tr td:nth-child(7) { display: block !important; order: 5; }
+    #bodySales tr td:nth-child(7) .btn-rollback { padding: 5px 7px; font-size: 11px; }
+
+    .empty-row { display: block !important; }
+    .empty-row td { display: block !important; text-align: center; padding: 24px; overflow: visible; white-space: normal; }
   }
+
   @media (max-width: 380px) {
     .dashboard { grid-template-columns: 1fr 1fr; }
     header { padding: 10px 12px; gap: 8px; }
     .header-logo { width: 36px; height: 36px; }
   }
 
-  select option { background: #231a0d; color: #f0e6d3; }
+  /* Бегущий текст для длинных названий */
+  @keyframes marquee {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+  }
+  .marquee-wrap { overflow: hidden; display: flex; min-width: 0; }
+  .marquee-wrap span {
+    white-space: nowrap;
+    display: inline-block;
+    padding-right: 40px;
+    animation: marquee 8s linear infinite;
+    animation-play-state: paused;
+  }
+  .marquee-wrap.overflow span { animation-play-state: running; }
+  .marquee-wrap:not(.overflow) span { padding-right: 0; }
+
+  .btn-refresh {
+    background: none; border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text2); padding: 6px 10px; font-size: 16px; cursor: pointer;
+    transition: transform 0.4s ease; flex-shrink: 0;
+  }
+  .btn-refresh:hover { color: var(--gold); border-color: var(--gold); }
+  .btn-refresh.spinning { animation: spin 0.6s linear; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .mobile-fab-bar { display: none; }
 
 
   /* ── EDIT STOCK ── */
@@ -390,13 +509,15 @@
       <div class="user-badge">
         <span class="uname" id="headerUser">—</span>
         <span class="urole" id="headerRole"></span>
+        <span id="headerBalance" style="display:none;font-size:11px;color:#7bd99c;font-weight:700;"></span>
+        <button id="btnTransfer" onclick="openTransfer()" style="display:none;padding:4px 8px;font-size:11px;border-radius:6px;border:1px solid #7bd99c;background:rgba(123,217,156,0.1);color:#7bd99c;cursor:pointer;">⇄ Перевод</button>
       </div>
       <button class="btn-logout" onclick="doLogout()">Выйти</button>
     </div>
   </header>
 
   <!-- DASHBOARD -->
-  <div class="dashboard" id="dashboardStats">
+  <div class="dashboard">
     <div class="stat-card">
       <div class="label">Наименований</div>
       <div class="value" id="statItems">0</div>
@@ -437,6 +558,10 @@
         <button class="btn btn-primary" id="btnAddIncoming" onclick="openIncoming()">+ Поступление</button>
         <button class="btn btn-danger" id="btnAddSale" onclick="openSale()">− Продажа</button>
         <input class="search-input" placeholder="Поиск..." id="searchStock" oninput="renderStock()"/>
+        <button class="btn-refresh" onclick="refreshAll(this)" title="Обновить">🔄</button>
+      </div>
+      <div id="guestPriceNote" style="display:none;background:rgba(41,128,185,0.12);border:1px solid #2980b9;border-radius:8px;padding:10px 14px;margin:0 16px 8px;font-size:13px;color:#85c1e9">
+        🛒 Цены указаны для гостей клуба (включая наценку 20%). Нажмите «🛒 Купить» для оформления.
       </div>
       <div class="filters">
         <span class="filter-label">Фильтр:</span>
@@ -448,9 +573,6 @@
         </select>
         <button class="btn-clear-filter" onclick="clearStockFilter()" id="btnClearStock">Сбросить</button>
       </div>
-      <div id="guestPriceNote" style="display:none;background:rgba(41,128,185,0.12);border:1px solid #2980b9;border-radius:8px;padding:10px 14px;margin:8px 16px 0;font-size:13px;color:#85c1e9">
-        🛒 Цены указаны для гостей клуба (включая наценку 20%). Нажмите «Купить» для оформления.
-      </div>
       <div class="table-wrap">
         <table>
           <thead><tr>
@@ -458,8 +580,9 @@
             <th onclick="sortTable('stock','qty')">Кол-во <span class="sort-arrow">↕</span></th>
             <th onclick="sortTable('stock','price')">Цена, AZN <span class="sort-arrow">↕</span></th>
             <th onclick="sortTable('stock','total')">Сумма, AZN <span class="sort-arrow">↕</span></th>
-            <th id="thStockDate" onclick="sortTable('stock','date')">Изменено <span class="sort-arrow">↕</span></th>
-            <th id="thStockAction" style="width:90px"></th>
+            <th onclick="sortTable('stock','date')">Изменено <span class="sort-arrow">↕</span></th>
+            <th>Комментарий</th>
+            <th id="thStockAction" style="width:70px"></th>
           </tr></thead>
           <tbody id="bodyStock"></tbody>
         </table>
@@ -472,6 +595,7 @@
         <h2>История поступлений</h2>
         <button class="btn btn-primary" id="btnAddIncoming2" onclick="openIncoming()">+ Поступление</button>
         <input class="search-input" placeholder="Поиск..." id="searchIncoming" oninput="renderIncoming()"/>
+        <button class="btn-refresh" onclick="refreshAll(this)" title="Обновить">🔄</button>
       </div>
       <div class="filters">
         <span class="filter-label">Фильтр:</span>
@@ -502,6 +626,7 @@
         <h2>История продаж</h2>
         <button class="btn btn-danger" id="btnAddSale2" onclick="openSale()">− Продажа</button>
         <input class="search-input" placeholder="Поиск..." id="searchSales" oninput="renderSales()"/>
+        <button class="btn-refresh" onclick="refreshAll(this)" title="Обновить">🔄</button>
       </div>
       <div class="filters">
         <span class="filter-label">Фильтр:</span>
@@ -520,6 +645,9 @@
             <th onclick="sortTable('sales','price')">Цена, AZN <span class="sort-arrow">↕</span></th>
             <th onclick="sortTable('sales','total')">Сумма, AZN <span class="sort-arrow">↕</span></th>
             <th>Комментарий</th>
+            <th id="thPaymentCol">Оплата</th>
+            <th id="thSellerCol" style="display:none">Продавец</th>
+            <th id="thGuestCol" style="display:none">Покупатель</th>
             <th id="thAction" style="width:80px"></th>
           </tr></thead>
           <tbody id="bodySales"></tbody>
@@ -529,9 +657,13 @@
 
     <!-- ADMIN -->
     <div class="panel" id="panel-admin">
-      <div class="toolbar"><h2>Управление пользователями</h2></div>
+      <div class="toolbar"><h2>Управление пользователями</h2><button class="btn-refresh" onclick="refreshAll(this)" title="Обновить">🔄</button></div>
       <div class="admin-panel">
         <h3>Пользователи системы</h3>
+        <div id="totalBalanceInfo" style="display:flex;align-items:center;justify-content:space-between;background:rgba(201,168,76,0.08);border-radius:8px;padding:10px 14px;margin-bottom:12px;">
+          <span style="font-size:13px;color:var(--text2);">💳 Общий баланс членов клуба:</span>
+          <span id="totalBalanceVal" style="font-size:18px;font-weight:700;color:var(--gold);">—</span>
+        </div>
         <div id="userList"></div>
       </div>
       <br/>
@@ -547,7 +679,47 @@
         </div>
         <button class="btn btn-primary btn-sm" onclick="changePassword()">Сохранить пароль</button>
       </div>
-    </div>
+      <br/>
+      <div class="admin-panel" style="margin-top:0">
+        <h3>💳 Управление балансом</h3>
+        <div class="form-group" style="max-width:300px">
+          <label>Пользователь</label>
+          <select class="filter-select" id="balanceUser" style="width:100%" onchange="showUserBalance()"></select>
+        </div>
+        <div id="currentBalanceInfo" style="padding:10px 0;font-size:14px;color:var(--text2);"></div>
+        <div class="form-group" style="max-width:300px">
+          <label>Сумма (+ пополнение, − списание)</label>
+          <input type="number" id="balanceChange" step="0.01" placeholder="например: 100 или -50"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:14px;width:100%"/>
+        </div>
+        <div class="form-group" style="max-width:300px">
+          <label>Комментарий</label>
+          <input type="text" id="balanceComment" placeholder="Причина изменения"
+            style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:14px;width:100%"/>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="applyBalanceChange()">Применить</button>
+      </div>
+      <br/>
+      <div class="admin-panel" style="margin-top:0">
+        <h3>📋 История действий</h3>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+          <select id="activityFilterUser" class="filter-select" onchange="renderActivityLog()" style="flex:1;min-width:160px;">
+            <option value="">Все пользователи</option>
+          </select>
+          <select id="activityFilterAction" class="filter-select" onchange="renderActivityLog()" style="flex:1;min-width:160px;">
+            <option value="">Все действия</option>
+            <option value="purchase">Покупки с баланса</option>
+            <option value="purchase_cash">Покупки cash</option>
+            <option value="topup">Пополнения</option>
+            <option value="deduct">Списания</option>
+            <option value="rollback">Возвраты</option>
+            <option value="transfer_out">Переводы (исходящие)</option>
+            <option value="transfer_in">Переводы (входящие)</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('activityFilterUser').value='';document.getElementById('activityFilterAction').value='';renderActivityLog()">Сбросить</button>
+        </div>
+        <div id="activityList" style="max-height:400px;overflow-y:auto;"></div>
+      </div>
 
   </div><!-- /main -->
 </div><!-- /app -->
@@ -612,17 +784,61 @@
     </div>
     <div class="form-group">
       <label>Количество, шт. *</label>
-      <input type="number" id="saleQty" min="1" inputmode="numeric" placeholder="Сколько продаём"/>
+      <input type="number" id="saleQty" min="1" inputmode="numeric" placeholder="Сколько продаём" oninput="updateBalanceInfo()"/>
       <div class="err-msg" id="errSaleQty">Введите корректное количество</div>
     </div>
     <div class="form-group">
       <label>Цена за штуку, AZN *</label>
-      <input type="number" id="salePrice" min="0.01" step="0.01" inputmode="decimal" placeholder="Цена продажи"/>
+      <input type="number" id="salePrice" min="0.01" step="0.01" inputmode="decimal" placeholder="Цена продажи" oninput="updateGuestPrice();updateBalanceInfo()" readonly style="opacity:0.7;cursor:not-allowed;"/>
       <div class="err-msg" id="errSalePrice">Введите цену > 0</div>
     </div>
     <div class="form-group">
       <label>Комментарий</label>
       <input type="text" id="saleComment" placeholder="Необязательно"/>
+    </div>
+    <div class="form-group">
+      <label>Тип покупателя</label>
+      <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <button type="button" id="btnMember" onclick="setGuestMode(false)"
+          style="flex:1;padding:10px;background:var(--gold);color:#1a0f00;font-weight:700;border:none;cursor:pointer;font-size:13px;">
+          👤 Член клуба
+        </button>
+        <button type="button" id="btnGuest" onclick="setGuestMode(true)"
+          style="flex:1;padding:10px;background:var(--bg3);color:var(--text2);font-weight:600;border:none;cursor:pointer;font-size:13px;">
+          🚶 Гость +20%
+        </button>
+      </div>
+    </div>
+    <div class="form-group" id="guestPriceInfo" style="display:none;background:rgba(201,168,76,0.1);border-radius:8px;padding:10px 12px;">
+      <span style="font-size:12px;color:var(--text2);">Цена для гостя:</span>
+      <span id="guestPriceVal" style="font-size:16px;font-weight:700;color:var(--gold);margin-left:8px;"></span>
+    </div>
+    <div class="form-group">
+      <label>Способ оплаты</label>
+      <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <button type="button" id="btnPayBalance" onclick="setPaymentMethod('balance')"
+          style="flex:1;padding:10px;background:var(--gold);color:#1a0f00;font-weight:700;border:none;cursor:pointer;font-size:13px;">
+          💳 С баланса
+        </button>
+        <button type="button" id="btnPayCash" onclick="setPaymentMethod('cash')"
+          style="flex:1;padding:10px;background:var(--bg3);color:var(--text2);font-weight:600;border:none;cursor:pointer;font-size:13px;">
+          💵 Cash
+        </button>
+      </div>
+    </div>
+    <div id="balanceInfo" style="background:rgba(201,168,76,0.08);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;color:var(--text2);">Баланс покупателя:</span>
+        <span id="balanceAmount" style="font-size:15px;font-weight:700;color:var(--gold);">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+        <span style="font-size:12px;color:var(--text2);">К списанию:</span>
+        <span id="balanceDeduct" style="font-size:15px;font-weight:700;color:#e67e22;">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+        <span style="font-size:12px;color:var(--text2);">Остаток после:</span>
+        <span id="balanceAfter" style="font-size:15px;font-weight:700;">—</span>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('modalSale')">Отмена</button>
@@ -632,40 +848,6 @@
 </div>
 
 
-
-<!-- GUEST SALE MODAL -->
-<div class="modal-overlay" id="modalGuestSale">
-  <div class="modal">
-    <div class="modal-drag"></div>
-    <h2>🛒 Покупка сигар</h2>
-    <div class="modal-alert" id="alertGuestSale"></div>
-    <div class="form-group">
-      <label>Наименование</label>
-      <div id="guestSaleName" style="font-size:15px;font-weight:600;color:var(--gold2);padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:4px"></div>
-    </div>
-    <div class="form-group">
-      <label>Цена за штуку (с наценкой), AZN</label>
-      <div id="guestSalePrice" style="font-size:18px;font-weight:700;color:var(--gold2);padding:6px 0"></div>
-    </div>
-    <div class="form-group">
-      <label>В наличии</label>
-      <div id="guestSaleStock" style="color:var(--text2);font-size:14px;padding:4px 0">—</div>
-    </div>
-    <div class="form-group">
-      <label>Количество, шт. *</label>
-      <input type="number" id="guestSaleQty" min="1" inputmode="numeric" placeholder="Сколько покупаем"/>
-      <div class="err-msg" id="errGuestSaleQty">Введите корректное количество</div>
-    </div>
-    <div class="form-group">
-      <label>Комментарий</label>
-      <input type="text" id="guestSaleComment" placeholder="Необязательно"/>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal('modalGuestSale')">Отмена</button>
-      <button class="btn btn-buy-guest" style="font-size:14px;padding:10px 20px" onclick="submitGuestSale()">🛒 Подтвердить покупку</button>
-    </div>
-  </div>
-</div>
 
 <!-- EDIT STOCK MODAL -->
 <div class="modal-overlay" id="modalEditStock">
@@ -690,6 +872,19 @@
       <label>Комментарий к изменению</label>
       <input type="text" id="editComment" placeholder="Необязательно"/>
     </div>
+    <div class="form-group">
+      <label>Статус</label>
+      <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+        <button type="button" id="btnUnlock" onclick="setLocked(false)"
+          style="flex:1;padding:10px;background:var(--gold);color:#1a0f00;font-weight:700;border:none;cursor:pointer;font-size:13px;">
+          ✅ Доступна
+        </button>
+        <button type="button" id="btnLock" onclick="setLocked(true)"
+          style="flex:1;padding:10px;background:var(--bg3);color:var(--text2);font-weight:600;border:none;cursor:pointer;font-size:13px;">
+          🔒 Заблокирована
+        </button>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('modalEditStock')">Отмена</button>
       <button class="btn btn-primary" onclick="submitEditStock()">Сохранить</button>
@@ -710,7 +905,95 @@
   </div>
 </div>
 
-<div id="loadingOverlay"><div class="spinner"></div><div class="loading-text">Загрузка данных...</div></div>
+<!-- MOBILE BOTTOM ACTION BAR -->
+<div class="mobile-fab-bar" id="mobileFabBar">
+  <button class="btn btn-primary" id="mobileBtnIncoming" onclick="openIncoming()" style="display:none">+ Поступление</button>
+  <button class="btn btn-danger" id="mobileBtnSale" onclick="openSale()" style="display:none">− Продажа</button>
+</div>
+
+<!-- TRANSFER MODAL -->
+<div class="modal-overlay" id="modalTransfer">
+  <div class="modal">
+    <div class="modal-drag"></div>
+    <h2>⇄ Перевод баланса</h2>
+    <div class="modal-alert" id="alertTransfer"></div>
+    <div class="form-group">
+      <label>Кому перевести</label>
+      <select id="transferTo" class="filter-select" style="width:100%" onchange="updateTransferInfo()">
+        <option value="">— выберите получателя —</option>
+      </select>
+    </div>
+    <div id="transferBalanceInfo" style="display:none;background:rgba(201,168,76,0.08);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;">
+        <span style="font-size:12px;color:var(--text2);">Ваш баланс:</span>
+        <span id="transferFromBal" style="font-size:14px;font-weight:700;color:var(--gold);"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <span style="font-size:12px;color:var(--text2);">Баланс получателя:</span>
+        <span id="transferToBal" style="font-size:14px;font-weight:700;color:#7bd99c;"></span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Сумма перевода, AZN *</label>
+      <input type="number" id="transferAmount" min="0.01" step="0.01" inputmode="decimal"
+        placeholder="Введите сумму" oninput="updateTransferInfo()"/>
+    </div>
+    <div id="transferAfterInfo" style="display:none;background:rgba(123,217,156,0.06);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;">
+        <span style="font-size:12px;color:var(--text2);">Ваш остаток:</span>
+        <span id="transferFromAfter" style="font-size:14px;font-weight:700;"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <span style="font-size:12px;color:var(--text2);">Станет у получателя:</span>
+        <span id="transferToAfter" style="font-size:14px;font-weight:700;color:#7bd99c;"></span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Комментарий</label>
+      <input type="text" id="transferComment" placeholder="Необязательно"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modalTransfer')">Отмена</button>
+      <button class="btn btn-primary" onclick="submitTransfer()">Перевести</button>
+    </div>
+  </div>
+</div>
+
+<!-- GUEST SALE MODAL -->
+<div class="modal-overlay" id="modalGuestSale">
+  <div class="modal">
+    <div class="modal-drag"></div>
+    <h2>🛒 Покупка сигар</h2>
+    <div class="modal-alert" id="alertGuestSale"></div>
+    <div class="form-group">
+      <label>Наименование</label>
+      <div id="guestSaleName" style="font-size:15px;font-weight:600;color:var(--gold2);padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:4px"></div>
+    </div>
+    <div class="form-group">
+      <label>Цена за штуку (с наценкой), AZN</label>
+      <div id="guestSalePriceDisplay" style="font-size:20px;font-weight:700;color:var(--gold2);padding:6px 0"></div>
+    </div>
+    <div class="form-group">
+      <label>В наличии</label>
+      <div id="guestSaleStock" style="color:var(--text2);font-size:14px;padding:4px 0">—</div>
+    </div>
+    <div class="form-group">
+      <label>Количество, шт. *</label>
+      <input type="number" id="guestSaleQty" min="1" inputmode="numeric" placeholder="Сколько покупаем"/>
+      <div class="err-msg" id="errGuestSaleQty">Введите корректное количество</div>
+    </div>
+    <div class="form-group">
+      <label>Комментарий</label>
+      <input type="text" id="guestSaleComment" placeholder="Необязательно"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('modalGuestSale')">Отмена</button>
+      <button class="btn btn-buy-guest" style="font-size:14px;padding:10px 20px" onclick="submitGuestSale()">🛒 Подтвердить</button>
+    </div>
+  </div>
+</div>
+
+<div id="loadingOverlay" style="display:none"><div class="spinner"></div><div class="loading-text">Загрузка данных...</div></div>
 <div id="toast"></div>
 
 <script>
@@ -725,6 +1008,12 @@ async function loadUsers() {
   const { data, error } = await db.from('users').select('*');
   if (error) { console.error('loadUsers error:', error); return []; }
   USERS = data || [];
+  // Синхронизируем баланс текущего пользователя
+  if (currentUser) {
+    const me = USERS.find(u => u.login === currentUser.login);
+    if (me) currentUser.balance = me.balance || 0;
+    updateHeaderBalance();
+  }
   return USERS;
 }
 
@@ -733,11 +1022,11 @@ async function saveUsers(users) {
 }
 
 // ── ROLE CAPABILITIES ──
-const CAN_EDIT  = u => u && (u.role === 'admin' || u.role === 'manager');
+const CAN_EDIT = u => u && (u.role === 'admin' || u.role === 'manager');
 const IS_ADMIN  = u => u && u.role === 'admin';
+const CAN_SALE  = u => u && (u.role === 'admin' || u.role === 'manager');
 const IS_GUEST  = u => u && u.role === 'guest';
-const GUEST_MARKUP = 1.20; // +20%
-function guestPrice(price) { return Math.ceil(price * GUEST_MARKUP); }
+function guestPrice(price) { return Math.ceil(price * 1.20); }
 
 // ── LOGIN ──
 async function doLogin() {
@@ -747,17 +1036,31 @@ async function doLogin() {
   loginBtn.textContent = 'Вход...';
   loginBtn.disabled = true;
   try {
-    const { data, error } = await db.from('users')
-      .select('*').eq('login', login).eq('password', pass).single();
-    if (error || !data) {
+    const { data, error } = await db.from('users').select('*').ilike('login', login);
+    if (error || !data || data.length === 0) {
+      document.getElementById('loginErr').textContent = 'Неверный логин или пароль';
       document.getElementById('loginErr').classList.add('show');
       document.getElementById('loginPass').value = '';
       return;
     }
-    currentUser = data;
-    localStorage.setItem('cig_session', JSON.stringify({ login: data.login }));
+    const user = data.find(u => u.password === pass);
+    if (!user) {
+      document.getElementById('loginErr').textContent = 'Неверный логин или пароль';
+      document.getElementById('loginErr').classList.add('show');
+      document.getElementById('loginPass').value = '';
+      return;
+    }
+    if (user.blocked === true) {
+      document.getElementById('loginErr').textContent = 'Ваш аккаунт заблокирован. Обратитесь к администратору.';
+      document.getElementById('loginErr').classList.add('show');
+      document.getElementById('loginPass').value = '';
+      return;
+    }
+    currentUser = user;
+    localStorage.setItem('cig_session', JSON.stringify({ login: user.login }));
     startApp();
   } catch(e) {
+    document.getElementById('loginErr').textContent = 'Ошибка подключения: ' + e.message;
     document.getElementById('loginErr').classList.add('show');
   } finally {
     loginBtn.textContent = 'Войти';
@@ -781,38 +1084,37 @@ function startApp() {
   document.getElementById('headerUser').textContent = currentUser.name;
   const roleNames = { admin: 'Администратор', manager: 'Менеджер', viewer: 'Просмотр', guest: 'Гость' };
   document.getElementById('headerRole').textContent = roleNames[currentUser.role] || '';
+  updateHeaderBalance();
+  // Загружаем пользователей чтобы получить актуальный баланс
+  loadUsers();
 
   // show admin tab
   document.getElementById('tabAdmin').style.display = IS_ADMIN(currentUser) ? '' : 'none';
 
-  // guest badge style
+  // гость видит только склад
   const isGuest = IS_GUEST(currentUser);
-  const badge = document.querySelector('.user-badge');
-  if (badge) badge.classList.toggle('is-guest', isGuest);
   ['tabIncoming','tabSales'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = isGuest ? 'none' : '';
   });
-  if (isGuest) switchTab('stock');
-
-  // show/hide action buttons
-  const canEdit = CAN_EDIT(currentUser);
-  ['btnAddIncoming','btnAddIncoming2','btnAddSale','btnAddSale2'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = canEdit ? '' : 'none';
-  });
-
-  // hide dashboard stats for guests (price info shouldn't be visible)
-  const dashEl = document.getElementById('dashboardStats');
-  if (dashEl) dashEl.style.display = isGuest ? 'none' : '';
-
-  // show guest price note
+  // синий бейдж для гостя
+  const badge = document.querySelector('.user-badge');
+  if (badge) badge.classList.toggle('is-guest', isGuest);
+  // баннер с ценами для гостя
   const guestNote = document.getElementById('guestPriceNote');
   if (guestNote) guestNote.style.display = isGuest ? '' : 'none';
 
-  // hide "Изменено" column for guests
-  const thDate = document.getElementById('thStockDate');
-  if (thDate) thDate.style.display = isGuest ? 'none' : '';
+  // show/hide action buttons
+  const canEdit = IS_ADMIN(currentUser);
+  const canSale = CAN_SALE(currentUser);
+  ['btnAddIncoming','btnAddIncoming2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = canEdit ? '' : 'none';
+  });
+  ['btnAddSale','btnAddSale2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = canSale ? '' : 'none';
+  });
 
   // show/hide reset filter buttons (admin only)
   const isAdmin = IS_ADMIN(currentUser);
@@ -823,25 +1125,288 @@ function startApp() {
 
   dbLoad();
   if (IS_ADMIN(currentUser)) renderAdminPanel();
+  // init mobile FAB for default tab (stock)
+  switchTab('stock');
+  document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+
+  // ── REALTIME подписки ──
+  // Авто-обновление при изменении данных другими пользователями
+  db.channel('realtime-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'stock' }, () => {
+      dbLoad();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, () => {
+      dbLoad();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'incoming' }, () => {
+      dbLoad();
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users',
+      filter: `login=eq.${currentUser.login}` }, (payload) => {
+      // Обновляем баланс текущего пользователя в реальном времени
+      if (payload.new && payload.new.balance !== undefined) {
+        currentUser.balance = payload.new.balance;
+        updateHeaderBalance();
+        updateBalanceInfo();
+      }
+    })
+    .subscribe();
 }
 
 // ── ADMIN PANEL ──
 async function renderAdminPanel() {
   await loadUsers();
+  // Общий баланс всех пользователей
+  const totalBalance = USERS.reduce((sum, u) => sum + (u.balance || 0), 0);
+  const totalEl = document.getElementById('totalBalanceVal');
+  if (totalEl) totalEl.textContent = formatNum(totalBalance) + ' ₼';
+
   const rClass = { admin: 'role-admin', manager: 'role-manager', viewer: 'role-viewer', guest: 'role-guest' };
   const rLabel = { admin: 'Администратор', manager: 'Менеджер', viewer: 'Просмотр', guest: 'Гость' };
 
-  document.getElementById('userList').innerHTML = USERS.map(u => `
-    <div class="user-row">
+  document.getElementById('userList').innerHTML = USERS.map(u => {
+    const isSelf = u.login === currentUser.login;
+    const blocked = u.blocked || false;
+    const blockBtn = !isSelf ? `
+      <button onclick="toggleBlock('${esc(u.login)}', ${!blocked})"
+        style="padding:5px 10px;font-size:11px;border-radius:6px;border:1px solid ${blocked ? 'var(--gold)' : '#8B0000'};
+               background:${blocked ? 'rgba(201,168,76,0.1)' : 'rgba(139,0,0,0.15)'};
+               color:${blocked ? 'var(--gold)' : '#e07070'};cursor:pointer;white-space:nowrap;">
+        ${blocked ? '✅ Разблокировать' : '🔒 Заблокировать'}
+      </button>` : '<span style="font-size:11px;color:var(--text2);">это вы</span>';
+    return `
+    <div class="user-row" style="${blocked ? 'opacity:0.5;' : ''}">
       <div class="user-info">
-        <div class="uname2">${esc(u.name)} <span style="color:var(--text2);font-weight:400;font-size:12px">(${esc(u.login)})</span></div>
+        <div class="uname2">${esc(u.name)} <span style="color:var(--text2);font-weight:400;font-size:12px">(${esc(u.login)})</span>
+        ${blocked ? '<span style="font-size:11px;color:#e07070;margin-left:6px;">🔒 заблокирован</span>' : ''}
+        <span style="font-size:12px;color:var(--gold);margin-left:8px;">💳 ${formatNum(u.balance||0)} ₼</span>
+        </div>
       </div>
       <span class="role-badge ${rClass[u.role]}">${rLabel[u.role]}</span>
-    </div>
-  `).join('');
+      ${blockBtn}
+    </div>`;
+  }).join('');
 
   const sel = document.getElementById('changePwUser');
   sel.innerHTML = USERS.map(u => `<option value="${esc(u.login)}">${esc(u.name)} (${esc(u.login)})</option>`).join('');
+  const balSel = document.getElementById('balanceUser');
+  balSel.innerHTML = USERS.filter(u => u.role !== 'admin' || true).map(u =>
+    `<option value="${esc(u.login)}">${esc(u.name)} — ${formatNum(u.balance||0)} ₼</option>`
+  ).join('');
+  showUserBalance();
+
+  // Загружаем историю и заполняем фильтр
+  await loadActivityLog();
+  const actUserSel = document.getElementById('activityFilterUser');
+  const curVal = actUserSel.value;
+  actUserSel.innerHTML = '<option value="">Все пользователи</option>' +
+    USERS.map(u => `<option value="${esc(u.login)}" ${u.login===curVal?'selected':''}>${esc(u.name)}</option>`).join('');
+  renderActivityLog();
+}
+
+async function toggleBlock(login, block) {
+  const { error } = await db.from('users').update({ blocked: block }).eq('login', login);
+  if (error) { toast('Ошибка: ' + error.message, 'error'); return; }
+  await renderAdminPanel();
+  toast(block ? `Пользователь ${login} заблокирован` : `Пользователь ${login} разблокирован`, 'success');
+}
+
+function openTransfer() {
+  // Заполняем список получателей (все кроме себя)
+  const sel = document.getElementById('transferTo');
+  sel.innerHTML = '<option value="">— выберите получателя —</option>' +
+    USERS.filter(u => u.login !== currentUser.login && u.role !== 'viewer' && u.blocked !== true)
+      .map(u => `<option value="${esc(u.login)}">${esc(u.name)}</option>`).join('');
+  document.getElementById('transferAmount').value = '';
+  document.getElementById('transferComment').value = '';
+  document.getElementById('transferBalanceInfo').style.display = 'none';
+  document.getElementById('transferAfterInfo').style.display = 'none';
+  document.getElementById('alertTransfer').classList.remove('show');
+  updateTransferInfo();
+  document.getElementById('modalTransfer').classList.add('open');
+}
+
+function updateTransferInfo() {
+  const toLogin = document.getElementById('transferTo').value;
+  const amount = parseFloat(document.getElementById('transferAmount').value) || 0;
+  const toUser = USERS.find(u => u.login === toLogin);
+  const fromBal = currentUser.balance || 0;
+  const toBal = toUser ? (toUser.balance || 0) : 0;
+
+  if (toUser) {
+    document.getElementById('transferFromBal').textContent = formatNum(fromBal) + ' ₼';
+    const toBalRow = document.getElementById('transferToBal').parentElement;
+    if (IS_ADMIN(currentUser)) {
+      document.getElementById('transferToBal').textContent = formatNum(toBal) + ' ₼';
+      toBalRow.style.display = '';
+    } else {
+      toBalRow.style.display = 'none';
+    }
+    document.getElementById('transferBalanceInfo').style.display = '';
+  } else {
+    document.getElementById('transferBalanceInfo').style.display = 'none';
+  }
+
+  if (toUser && amount > 0) {
+    const fromAfter = fromBal - amount;
+    const toAfter = toBal + amount;
+    const fromEl = document.getElementById('transferFromAfter');
+    fromEl.textContent = formatNum(fromAfter) + ' ₼';
+    fromEl.style.color = fromAfter < 0 ? '#c0392b' : 'var(--gold)';
+    const toAfterRow = document.getElementById('transferToAfter').parentElement;
+    if (IS_ADMIN(currentUser)) {
+      document.getElementById('transferToAfter').textContent = formatNum(toAfter) + ' ₼';
+      toAfterRow.style.display = '';
+    } else {
+      toAfterRow.style.display = 'none';
+    }
+    document.getElementById('transferAfterInfo').style.display = '';
+  } else {
+    document.getElementById('transferAfterInfo').style.display = 'none';
+  }
+}
+
+async function submitTransfer() {
+  const toLogin = document.getElementById('transferTo').value;
+  const amount = parseFloat(document.getElementById('transferAmount').value);
+  const comment = document.getElementById('transferComment').value.trim();
+  const al = document.getElementById('alertTransfer');
+  al.classList.remove('show');
+
+  if (!toLogin) { al.textContent = 'Выберите получателя'; al.classList.add('show'); return; }
+  if (!amount || amount <= 0) { al.textContent = 'Введите сумму'; al.classList.add('show'); return; }
+  if (amount > (currentUser.balance || 0)) {
+    al.textContent = `Недостаточно средств! Ваш баланс: ${formatNum(currentUser.balance || 0)} ₼`;
+    al.classList.add('show');
+    return;
+  }
+
+  showLoading(true);
+  try {
+    const { data: result, error } = await db.rpc('transfer_balance', {
+      p_from_login: currentUser.login,
+      p_to_login: toLogin,
+      p_amount: amount,
+      p_comment: comment
+    });
+    if (error) throw new Error(error.message);
+    if (result && result.error) { al.textContent = result.error; al.classList.add('show'); return; }
+
+    // Обновляем локальный баланс
+    currentUser.balance = result.new_balance;
+    const me = USERS.find(u => u.login === currentUser.login);
+    if (me) me.balance = result.new_balance;
+    const toUser = USERS.find(u => u.login === toLogin);
+    if (toUser) toUser.balance = (toUser.balance || 0) + amount;
+    updateHeaderBalance();
+
+    closeModal('modalTransfer');
+    toast(`Перевод ${formatNum(amount)} ₼ выполнен`, 'success');
+    await dbLoad();
+  } catch(e) {
+    al.textContent = 'Ошибка: ' + e.message;
+    al.classList.add('show');
+  } finally {
+    showLoading(false);
+  }
+}
+
+function updateHeaderBalance() {
+  const el = document.getElementById('headerBalance');
+  const btn = document.getElementById('btnTransfer');
+  if (!el || !currentUser) return;
+  const bal = currentUser.balance || 0;
+  el.textContent = '💳 ' + formatNum(bal) + ' ₼';
+  el.style.display = '';
+  if (btn) btn.style.display = '';
+}
+
+function showUserBalance() {
+  const login = document.getElementById('balanceUser').value;
+  const user = USERS.find(u => u.login === login);
+  const el = document.getElementById('currentBalanceInfo');
+  if (user && el) {
+    el.innerHTML = `Текущий баланс: <strong style="color:var(--gold);font-size:16px;">${formatNum(user.balance||0)} ₼</strong>`;
+  }
+}
+
+async function applyBalanceChange() {
+  const login = document.getElementById('balanceUser').value;
+  const amount = parseFloat(document.getElementById('balanceChange').value);
+  const comment = document.getElementById('balanceComment').value.trim();
+  if (!login) { toast('Выберите пользователя', 'error'); return; }
+  if (isNaN(amount) || amount === 0) { toast('Введите сумму', 'error'); return; }
+  const user = USERS.find(u => u.login === login);
+  if (!user) return;
+  const newBalance = (user.balance || 0) + amount;
+  const { error } = await db.from('users').update({ balance: newBalance }).eq('login', login);
+  if (error) { toast('Ошибка: ' + error.message, 'error'); return; }
+  try {
+    await db.from('balance_log').insert({
+      id: Date.now(), date: todayStr(), login,
+      amount, comment: comment || (amount > 0 ? 'Пополнение' : 'Списание'),
+      admin: currentUser.name
+    });
+    await db.from('activity_log').insert({
+      id: Date.now() + 1, date: todayStr(), login,
+      action: amount > 0 ? 'topup' : 'deduct',
+      description: (amount > 0 ? 'Пополнение баланса' : 'Списание с баланса') + (comment ? ': ' + comment : '') + ' (администратор: ' + currentUser.name + ')',
+      amount, balance_before: user.balance || 0, balance_after: newBalance
+    });
+  } catch(e) { console.warn('balance_log:', e); }
+  user.balance = newBalance;
+  document.getElementById('balanceChange').value = '';
+  document.getElementById('balanceComment').value = '';
+  await renderAdminPanel();
+  toast(`Баланс ${user.name} ${amount > 0 ? 'пополнен на' : 'уменьшен на'} ${formatNum(Math.abs(amount))} ₼`, 'success');
+}
+
+let activityLog = [];
+
+async function loadActivityLog() {
+  const { data, error } = await db.from('activity_log').select('*').order('id', { ascending: false }).limit(200);
+  if (!error) activityLog = data || [];
+}
+
+function renderActivityLog() {
+  const filterUser = document.getElementById('activityFilterUser').value;
+  const filterAction = document.getElementById('activityFilterAction').value;
+
+  let data = activityLog;
+  if (filterUser) data = data.filter(r => r.login === filterUser);
+  if (filterAction) data = data.filter(r =>
+    r.action === filterAction ||
+    (filterAction === 'rollback' && r.action === 'rollback_cash') ||
+    (filterAction === 'transfer_out' && r.action === 'transfer_out') ||
+    (filterAction === 'transfer_in' && r.action === 'transfer_in')
+  );
+
+  const actionIcon = { purchase: '🛒', purchase_cash: '💵', topup: '💳', deduct: '➖', rollback: '↩', rollback_cash: '↩', transfer_out: '→', transfer_in: '←' };
+  const actionColor = { purchase: '#e67e22', purchase_cash: '#e67e22', topup: '#7bd99c', deduct: '#e07070', rollback: 'var(--gold)', rollback_cash: 'var(--gold)', transfer_out: '#e07070', transfer_in: '#7bd99c' };
+
+  const el = document.getElementById('activityList');
+  if (!data.length) { el.innerHTML = '<div style="text-align:center;color:var(--text2);padding:20px;">Нет записей</div>'; return; }
+
+  el.innerHTML = data.map(r => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);">
+      <div style="flex-shrink:0;font-size:20px;">${actionIcon[r.action] || '📌'}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${esc(r.description || '')}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px;">
+          ${esc(r.login)} · ${r.date || ''}
+          ${r.balance_before !== null && r.balance_before !== undefined
+            ? ` · <span style="color:var(--text2);">было: ${formatNum(r.balance_before)} ₼</span>`
+            : ''}
+          ${r.balance_after !== null && r.balance_after !== undefined
+            ? ` → <span style="color:${actionColor[r.action]};">${formatNum(r.balance_after)} ₼</span>`
+            : ''}
+        </div>
+      </div>
+      <div style="flex-shrink:0;font-size:14px;font-weight:700;color:${actionColor[r.action] || 'var(--text)'};">
+        ${r.amount > 0 ? '+' : ''}${r.amount !== null ? formatNum(r.amount) + ' ₼' : ''}
+      </div>
+    </div>
+  `).join('');
 }
 
 async function changePassword() {
@@ -864,7 +1429,7 @@ const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 let stock = [], incoming = [], sales = [];
 
 function showLoading(on) {
-  document.getElementById('loadingOverlay').classList.toggle('show', on);
+  document.getElementById('loadingOverlay').style.display = on ? 'flex' : 'none';
 }
 
 async function dbLoad() {
@@ -898,6 +1463,8 @@ async function dbLoad() {
 
 async function dbUpsertStock(item) {
   const payload = { name: item.name, qty: item.qty, price: item.price, date: item.date };
+  if (item.comment !== undefined) payload.comment = item.comment;
+  if (item.locked !== undefined) payload.locked = item.locked;
   console.log('upsertStock:', payload);
   const { data, error } = await db.from('stock')
     .upsert(payload, { onConflict: 'name' })
@@ -914,18 +1481,7 @@ async function dbInsertIncoming(record) {
 }
 
 async function dbInsertSale(record) {
-  const payload = {
-    id: Date.now(),
-    date: record.date,
-    name: record.name,
-    qty: record.qty,
-    price: record.price,
-    total: record.total,
-    comment: record.comment || '',
-    guest: record.guest || false,
-    seller: record.seller || (currentUser ? currentUser.name : ''),
-    payment_method: record.payment_method || 'cash'
-  };
+  const payload = { id: Date.now(), date: record.date, name: record.name, qty: record.qty, price: record.price, total: record.total, comment: record.comment || '', seller: record.seller || '', guest: record.guest || false, payment_method: record.payment_method || 'balance' };
   console.log('insertSale:', payload);
   const { error } = await db.from('sales').insert(payload);
   if (error) { console.error('insertSale error:', error); throw new Error(error.message || error.hint || JSON.stringify(error)); }
@@ -963,11 +1519,20 @@ function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', tabOrder[i] === name));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
+
+  // Mobile FAB: show incoming on stock/incoming tabs, sale on stock/sales tabs
+  const canEdit = IS_ADMIN(currentUser);
+  const showInc = IS_ADMIN(currentUser) && (name === 'stock' || name === 'incoming');
+  const showSale = CAN_SALE(currentUser) && (name === 'stock' || name === 'sales');
+  const mIn = document.getElementById('mobileBtnIncoming');
+  const mSale = document.getElementById('mobileBtnSale');
+  if (mIn)   mIn.style.display   = showInc  ? '' : 'none';
+  if (mSale) mSale.style.display = showSale ? '' : 'none';
 }
 
 // ── DASHBOARD ──
 function updateDashboard() {
-  document.getElementById('statItems').textContent = stock.length;
+  document.getElementById('statItems').textContent = stock.filter(r => r.qty > 0).length;
   document.getElementById('statQty').textContent   = stock.reduce((s,r) => s+r.qty, 0);
   document.getElementById('statValue').textContent = formatNum(stock.reduce((s,r) => s+r.qty*r.price, 0));
   const allOps = [...incoming,...sales];
@@ -982,6 +1547,12 @@ function updateDashboard() {
 }
 
 // ── RENDER STOCK ──
+const isMobile = () => window.innerWidth < 640;
+
+const cardStyle = 'display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;width:100%;box-sizing:border-box;';
+const nameStyle = 'flex:1;font-size:14px;font-weight:700;color:var(--gold2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;padding:0;border:none;';
+const tdStyle   = 'flex-shrink:0;padding:0;border:none;';
+
 function renderStock() {
   const search = document.getElementById('searchStock').value.trim().toLowerCase();
   const status = document.getElementById('filterStockStatus').value;
@@ -990,30 +1561,64 @@ function renderStock() {
   if (status === 'ok')  data = data.filter(r => r.qty >= 1);
   if (status === 'low') data = data.filter(r => r.qty > 0 && r.qty < 5);
   if (status === 'out') data = data.filter(r => r.qty === 0);
-  updateSortArrows('stock', ['name','qty','price','total','date']);
+  updateSortArrows('stock', ['name','qty','price','total','date','comment']);
   const tbody = document.getElementById('bodyStock');
-  if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет данных</td></tr>'; return; }
-  const canEdit = CAN_EDIT(currentUser);
+  if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Нет данных</td></tr>'; return; }
+  const canEdit = IS_ADMIN(currentUser);
   const isGuest = IS_GUEST(currentUser);
-  tbody.innerHTML = data.map(r => {
-    const qc = r.qty === 0 ? 'badge-out' : r.qty < 5 ? 'badge-low' : '';
-    const displayPrice = isGuest ? guestPrice(r.price) : r.price;
-    const displayTotal = isGuest ? guestPrice(r.price) * r.qty : r.qty * r.price;
-    let actionBtn = '';
-    if (canEdit) {
-      actionBtn = `<button class="btn-edit" onclick="openEditStock('${r.id}')">✏️ Изменить</button>`;
-    } else if (isGuest && r.qty > 0) {
-      actionBtn = `<button class="btn-buy-guest" onclick="openGuestSale('${esc(r.name)}')">🛒 Купить</button>`;
+  if (isMobile()) {
+    const wrap = document.getElementById('bodyStock').closest('.table-wrap');
+    wrap.style.display = 'block';
+    const tableEl = wrap.querySelector('table');
+    let mobileDiv = wrap.querySelector('.mobile-cards');
+    if (!mobileDiv) {
+      mobileDiv = document.createElement('div');
+      mobileDiv.className = 'mobile-cards';
+      wrap.insertBefore(mobileDiv, tableEl);
     }
-    return `<tr>
-      <td class="td-name">${esc(r.name)}</td>
-      <td class="td-qty ${qc}">${r.qty}</td>
-      <td class="td-price">${formatNum(displayPrice)}</td>
-      <td class="td-total">${formatNum(displayTotal)}</td>
-      <td class="td-date" style="${isGuest ? 'display:none' : ''}">${formatDate(r.date)}</td>
-      <td>${actionBtn}</td>
-    </tr>`;
-  }).join('');
+    tableEl.style.display = 'none';
+    mobileDiv.innerHTML = data.map(r => {
+      const qc = r.qty === 0 ? '#c0392b' : r.qty < 5 ? '#e67e22' : 'var(--gold2)';
+      const opacity = r.locked ? 'opacity:0.5;' : '';
+      const displayPrice = isGuest ? guestPrice(r.price) : r.price;
+      let btn = '';
+      if (canEdit) {
+        btn = `<button class="btn-edit" onclick="openEditStock('${r.id}')" style="padding:5px 10px;font-size:12px;">✏️</button>`;
+      } else if (isGuest && r.qty > 0 && !r.locked) {
+        btn = `<button class="btn-buy-guest" onclick="openGuestSale('${esc(r.name)}')">🛒</button>`;
+      }
+      return `<div style="display:flex;align-items:center;gap:8px;padding:11px 12px;background:var(--bg2);border:1px solid ${r.locked ? '#555' : 'var(--border)'};border-radius:8px;margin-bottom:6px;${opacity}">
+        <div class="marquee-wrap" style="flex:1;min-width:0;"><span style="font-size:14px;font-weight:700;color:var(--gold2);">${esc(r.name)}</span></div>
+        ${r.locked ? `<span style="flex-shrink:0;font-size:14px;">🔒</span>` : ''}
+        <span style="flex-shrink:0;font-size:13px;color:var(--text2);">${formatNum(displayPrice)} ₼</span>
+        <span style="flex-shrink:0;font-size:18px;font-weight:700;color:${qc};">${r.qty}</span>
+        ${btn}
+      </div>`;
+    }).join('');
+  } else {
+    tbody.innerHTML = data.map(r => {
+      const qc = r.qty === 0 ? 'badge-out' : r.qty < 5 ? 'badge-low' : '';
+      const lockIcon = r.locked ? ' 🔒' : '';
+      const rowStyle = r.locked ? 'opacity:0.5;' : '';
+      const displayPrice = isGuest ? guestPrice(r.price) : r.price;
+      const displayTotal = isGuest ? guestPrice(r.price) * r.qty : r.qty * r.price;
+      let actionBtn = '';
+      if (canEdit) {
+        actionBtn = `<button class="btn-edit" onclick="openEditStock('${r.id}')">✏️ Изменить</button>`;
+      } else if (isGuest && r.qty > 0 && !r.locked) {
+        actionBtn = `<button class="btn-buy-guest" onclick="openGuestSale('${esc(r.name)}')">🛒 Купить</button>`;
+      }
+      return `<tr style="${rowStyle}">
+        <td class="td-name">${esc(r.name)}${lockIcon}</td>
+        <td class="td-qty ${qc}">${r.qty}</td>
+        <td class="td-price">${formatNum(displayPrice)}</td>
+        <td class="td-total">${formatNum(displayTotal)}</td>
+        <td class="td-date">${formatDate(r.date)}</td>
+        <td class="td-comment">${esc(r.comment||'')}</td>
+        <td>${actionBtn}</td>
+      </tr>`;
+    }).join('');
+  }
 }
 function clearStockFilter() {
   document.getElementById('filterStockStatus').value = 'ok';
@@ -1035,14 +1640,31 @@ function renderIncoming() {
   updateSortArrows('incoming',['date','name','qty','price','total']);
   const tbody = document.getElementById('bodyIncoming');
   if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет поступлений</td></tr>'; return; }
-  tbody.innerHTML = data.map(r => `<tr>
-    <td class="td-date">${formatDate(r.date)}</td>
-    <td class="td-name">${esc(r.name)}</td>
-    <td class="td-qty">${r.qty}</td>
-    <td class="td-price">${formatNum(r.price)}</td>
-    <td class="td-total">${formatNum(r.total)}</td>
-    <td class="td-comment">${esc(r.comment||'—')}</td>
-  </tr>`).join('');
+  if (isMobile()) {
+    const wrap2 = document.getElementById('bodyIncoming').closest('.table-wrap');
+    const tbl2 = wrap2.querySelector('table');
+    let md2 = wrap2.querySelector('.mobile-cards');
+    if (!md2) { md2 = document.createElement('div'); md2.className = 'mobile-cards'; wrap2.insertBefore(md2, tbl2); }
+    tbl2.style.display = 'none';
+    md2.innerHTML = data.map(r => `
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+        <div style="flex:1;min-width:0;">
+          <div class="marquee-wrap"><span style="font-size:14px;font-weight:700;color:var(--gold2);">${esc(r.name)}</span></div>
+          <div style="font-size:11px;color:var(--text2);margin-top:1px;">${formatDate(r.date)}</div>
+        </div>
+        <span style="flex-shrink:0;font-size:16px;font-weight:700;color:var(--gold2);">${r.qty} шт.</span>
+        <span style="flex-shrink:0;font-size:13px;color:#7bd99c;font-weight:600;">${formatNum(r.total)} ₼</span>
+      </div>`).join('');
+  } else {
+    tbody.innerHTML = data.map(r => `<tr>
+      <td class="td-date">${formatDate(r.date)}</td>
+      <td class="td-name">${esc(r.name)}</td>
+      <td class="td-qty">${r.qty}</td>
+      <td class="td-price">${formatNum(r.price)}</td>
+      <td class="td-total">${formatNum(r.total)}</td>
+      <td class="td-comment">${esc(r.comment||'—')}</td>
+    </tr>`).join('');
+  }
 }
 function clearIncomingFilter() {
   ['filterIncomingName','filterIncomingDateFrom','filterIncomingDateTo','searchIncoming'].forEach(id => { document.getElementById(id).value = ''; });
@@ -1062,18 +1684,50 @@ function renderSales() {
   if (dt) data = data.filter(r => r.date <= dt);
   updateSortArrows('sales',['date','name','qty','price','total']);
   const tbody = document.getElementById('bodySales');
-  const canRollback = CAN_EDIT(currentUser);
-  const colCount = canRollback ? 7 : 6;
-  if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="${colCount}">Нет продаж</td></tr>`; return; }
-  tbody.innerHTML = data.map(r => `<tr>
-    <td class="td-date">${formatDate(r.date)}</td>
-    <td class="td-name">${esc(r.name)}</td>
-    <td class="td-qty" style="color:#e67e22">${r.qty}</td>
-    <td class="td-price">${formatNum(r.price)}</td>
-    <td class="td-total" style="color:#e8c97e">${formatNum(r.total)}</td>
-    <td class="td-comment">${esc(r.comment||'—')}</td>
-    ${canRollback ? `<td><button class="btn-rollback" onclick="askRollback('${r.id}')">↩ Откат</button></td>` : ''}
-  </tr>`).join('');
+  const canRollback = IS_ADMIN(currentUser);
+  const showSeller = IS_ADMIN(currentUser) && !isMobile();
+  const thSeller = document.getElementById('thSellerCol');
+  const thGuest  = document.getElementById('thGuestCol');
+  if (thSeller) thSeller.style.display = showSeller ? '' : 'none';
+  if (thGuest)  thGuest.style.display  = showSeller ? '' : 'none';
+  if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="9">Нет продаж</td></tr>`; return; }
+  if (isMobile()) {
+    const wrap3 = document.getElementById('bodySales').closest('.table-wrap');
+    const tbl3 = wrap3.querySelector('table');
+    let md3 = wrap3.querySelector('.mobile-cards');
+    if (!md3) { md3 = document.createElement('div'); md3.className = 'mobile-cards'; wrap3.insertBefore(md3, tbl3); }
+    tbl3.style.display = 'none';
+    md3.innerHTML = data.map(r => `
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+        <div style="flex:1;min-width:0;">
+          <div class="marquee-wrap"><span style="font-size:14px;font-weight:700;color:var(--gold2);">${esc(r.name)}</span></div>
+          <div style="font-size:11px;color:var(--text2);margin-top:1px;">${formatDate(r.date)}${r.seller ? ` · <span style="color:var(--gold2);font-weight:600;">${esc(r.seller)}</span>` : ''}</div>
+          <div style="margin-top:3px;">${r.payment_method === 'cash'
+            ? '<span style="background:rgba(46,125,50,0.2);color:#7bd99c;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;">💵 Cash</span>'
+            : '<span style="background:rgba(201,168,76,0.15);color:var(--gold);padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;">💳 Баланс</span>'
+          }</div>
+        </div>
+        <span style="flex-shrink:0;font-size:16px;font-weight:700;color:#e67e22;">${r.qty} шт.</span>
+        <span style="flex-shrink:0;font-size:13px;color:#e8c97e;font-weight:600;">${formatNum(r.total)} ₼</span>
+        ${canRollback ? `<button class="btn-rollback" onclick="askRollback('${r.id}')" style="flex-shrink:0;padding:5px 8px;font-size:12px;">↩</button>` : ''}
+      </div>`).join('');
+  } else {
+    tbody.innerHTML = data.map(r => `<tr>
+      <td class="td-date">${formatDate(r.date)}</td>
+      <td class="td-name">${esc(r.name)}</td>
+      <td class="td-qty" style="color:#e67e22">${r.qty}</td>
+      <td class="td-price">${formatNum(r.price)}</td>
+      <td class="td-total" style="color:#e8c97e">${formatNum(r.total)}</td>
+      <td class="td-comment">${esc(r.comment||'—')}</td>
+      <td>${r.payment_method === 'cash'
+        ? '<span style="background:rgba(46,125,50,0.2);color:#7bd99c;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">💵 Cash</span>'
+        : '<span style="background:rgba(201,168,76,0.15);color:var(--gold);padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">💳 Баланс</span>'
+      }</td>
+      ${showSeller ? `<td class="td-comment" style="color:var(--gold2)">${esc(r.seller||'—')}</td>` : ''}
+      ${showSeller ? `<td>${r.guest ? '<span style="background:#8B0000;color:#fff;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">🚶 Гость</span>' : '<span style="color:var(--text2);font-size:12px;">👤 Клуб</span>'}</td>` : ''}
+      ${canRollback ? `<td><button class="btn-rollback" onclick="askRollback('${r.id}')">↩ Откат</button></td>` : ''}
+    </tr>`).join('');
+  }
 }
 function clearSalesFilter() {
   ['filterSalesName','filterSalesDateFrom','filterSalesDateTo','searchSales'].forEach(id => { document.getElementById(id).value = ''; });
@@ -1108,9 +1762,30 @@ function refreshNameFilters() {
   const saleSel = document.getElementById('saleName');
   const cur = saleSel.value;
   saleSel.innerHTML = '<option value="">— выберите —</option>' +
-    stock.filter(r => r.qty > 0).map(r =>
+    stock.filter(r => r.qty > 0 && !r.locked).map(r =>
       `<option value="${esc(r.name)}" ${r.name===cur?'selected':''} >${esc(r.name)} (${r.qty} шт.)</option>`
     ).join('');
+}
+
+async function refreshAll(btn) {
+  if (btn) {
+    btn.classList.add('spinning');
+    setTimeout(() => btn.classList.remove('spinning'), 600);
+  }
+  await dbLoad();
+  if (IS_ADMIN(currentUser)) await renderAdminPanel();
+}
+
+function checkMarquee() {
+  document.querySelectorAll('.marquee-wrap').forEach(wrap => {
+    const span = wrap.querySelector('span');
+    if (!span) return;
+    if (span.scrollWidth > wrap.clientWidth) {
+      wrap.classList.add('overflow');
+    } else {
+      wrap.classList.remove('overflow');
+    }
+  });
 }
 
 function renderAll() {
@@ -1119,11 +1794,12 @@ function renderAll() {
   renderStock();
   renderIncoming();
   renderSales();
+  setTimeout(checkMarquee, 50);
 }
 
 // ── MODALS ──
 function openIncoming() {
-  if (!CAN_EDIT(currentUser)) return;
+  if (!IS_ADMIN(currentUser)) return;
   document.getElementById('inDate').value = todayStr();
   ['inName','inQty','inPrice','inComment'].forEach(id => { document.getElementById(id).value = ''; });
   clearErrors('In');
@@ -1131,9 +1807,11 @@ function openIncoming() {
   setTimeout(() => document.getElementById('inName').focus(), 150);
 }
 function openSale() {
-  if (!CAN_EDIT(currentUser)) return;
+  if (!CAN_SALE(currentUser)) return;
   document.getElementById('saleDate').value = todayStr();
   ['saleName','saleQty','salePrice','saleComment'].forEach(id => { document.getElementById(id).value = ''; });
+  setGuestMode(false);
+  setPaymentMethod('balance');
   document.getElementById('saleStock').textContent = '—';
   clearErrors('Sale');
   refreshNameFilters();
@@ -1147,27 +1825,93 @@ function clearErrors(prefix) {
   if (a) { a.classList.remove('show'); a.textContent = ''; }
 }
 
+let salePaymentMethod = 'balance';
+
+function setPaymentMethod(method) {
+  salePaymentMethod = method;
+  document.getElementById('btnPayBalance').style.background = method === 'balance' ? 'var(--gold)' : 'var(--bg3)';
+  document.getElementById('btnPayBalance').style.color = method === 'balance' ? '#1a0f00' : 'var(--text2)';
+  document.getElementById('btnPayCash').style.background = method === 'cash' ? '#2a6a2a' : 'var(--bg3)';
+  document.getElementById('btnPayCash').style.color = method === 'cash' ? '#fff' : 'var(--text2)';
+  document.getElementById('balanceInfo').style.display = method === 'balance' ? '' : 'none';
+  updateBalanceInfo();
+}
+
+function updateBalanceInfo() {
+  if (salePaymentMethod !== 'balance') return;
+  const buyer = document.getElementById('saleBuyer') ? document.getElementById('saleBuyer').value : currentUser.login;
+  const user = USERS.find(u => u.login === buyer) || currentUser;
+  const balance = user ? (user.balance || 0) : 0;
+  const qty = parseInt(document.getElementById('saleQty').value) || 0;
+  const basePrice = parseFloat(document.getElementById('salePrice').value) || 0;
+  const applicable = isGuestMarkupApplicable();
+  const price = (saleIsGuest && applicable) ? Math.ceil(basePrice * 1.2) : basePrice;
+  const total = qty * price;
+  const after = balance - total;
+  document.getElementById('balanceAmount').textContent = formatNum(balance) + ' ₼';
+  document.getElementById('balanceDeduct').textContent = total > 0 ? '−' + formatNum(total) + ' ₼' : '—';
+  const afterEl = document.getElementById('balanceAfter');
+  afterEl.textContent = total > 0 ? formatNum(after) + ' ₼' : '—';
+  afterEl.style.color = after < 0 ? '#c0392b' : '#7bd99c';
+}
+
+function setGuestMode(isGuest) {
+  saleIsGuest = isGuest;
+  document.getElementById('btnMember').style.background = isGuest ? 'var(--bg3)' : 'var(--gold)';
+  document.getElementById('btnMember').style.color = isGuest ? 'var(--text2)' : '#1a0f00';
+  document.getElementById('btnGuest').style.background = isGuest ? 'var(--red)' : 'var(--bg3)';
+  document.getElementById('btnGuest').style.color = isGuest ? '#fff' : 'var(--text2)';
+  updateGuestPrice();
+}
+
+const GUEST_MARKUP_DATE = '2026-06-16'; // наценка для гостей начиная с этой даты
+
+function isGuestMarkupApplicable() {
+  const name = document.getElementById('saleName').value;
+  if (!name) return false;
+  // Проверяем таблицу incoming — было ли поступление этой сигары >= 16.06.2026
+  return incoming.some(r => r.name === name && (r.date||'').substring(0,10) >= GUEST_MARKUP_DATE);
+}
+
+function updateGuestPrice() {
+  const basePrice = parseFloat(document.getElementById('salePrice').value);
+  const info = document.getElementById('guestPriceInfo');
+  const applicable = isGuestMarkupApplicable();
+  if (saleIsGuest && basePrice > 0 && applicable) {
+    const guestPrice = Math.ceil(basePrice * 1.2);
+    document.getElementById('guestPriceVal').textContent = guestPrice + ',00 AZN';
+    info.style.display = '';
+  } else if (saleIsGuest && !applicable) {
+    document.getElementById('guestPriceVal').textContent = 'без наценки (старый сток)';
+    info.style.display = '';
+  } else {
+    info.style.display = 'none';
+  }
+}
+
 function fillSalePrice() {
   const name = document.getElementById('saleName').value;
   const item = stock.find(r => r.name === name);
   document.getElementById('salePrice').value = item ? item.price.toFixed(2) : '';
   document.getElementById('saleStock').textContent = item ? item.qty + ' шт.' : '—';
+  updateGuestPrice();
+  updateBalanceInfo();
 }
 
 // ── GUEST SALE ──
 function openGuestSale(name) {
   if (!IS_GUEST(currentUser)) return;
   const item = stock.find(r => r.name === name);
-  if (!item || item.qty < 1) return;
+  if (!item || item.qty < 1 || item.locked) return;
   const price = guestPrice(item.price);
   document.getElementById('guestSaleName').textContent = name;
-  document.getElementById('guestSalePrice').textContent = formatNum(price) + ' AZN';
+  document.getElementById('guestSalePriceDisplay').textContent = formatNum(price) + ' AZN';
   document.getElementById('guestSaleStock').textContent = 'В наличии: ' + item.qty + ' шт.';
   document.getElementById('guestSaleQty').value = '1';
   document.getElementById('guestSaleComment').value = '';
   document.querySelectorAll('#modalGuestSale .err-msg').forEach(e => e.classList.remove('show'));
-  document.getElementById('alertGuestSale').classList.remove('show');
-  document.getElementById('alertGuestSale').textContent = '';
+  const al = document.getElementById('alertGuestSale');
+  al.classList.remove('show'); al.textContent = '';
   document.getElementById('modalGuestSale').classList.add('open');
   setTimeout(() => document.getElementById('guestSaleQty').focus(), 150);
 }
@@ -1178,8 +1922,6 @@ async function submitGuestSale() {
   const qty     = parseInt(document.getElementById('guestSaleQty').value);
   const comment = document.getElementById('guestSaleComment').value.trim();
   const item    = stock.find(r => r.name === name);
-
-  // validate
   document.querySelectorAll('#modalGuestSale .err-msg').forEach(e => e.classList.remove('show'));
   if (!qty || qty < 1) {
     document.getElementById('guestSaleQty').classList.add('error');
@@ -1188,25 +1930,27 @@ async function submitGuestSale() {
   }
   if (!item || item.qty < qty) {
     const al = document.getElementById('alertGuestSale');
-    al.textContent = `Недостаточно сигар! В наличии: ${item ? item.qty : 0} шт., запрошено: ${qty} шт.`;
+    al.textContent = `Недостаточно! В наличии: ${item ? item.qty : 0} шт., запрошено: ${qty} шт.`;
     al.classList.add('show');
     return;
   }
-
   const price = guestPrice(item.price);
   const date  = todayStr();
   showLoading(true);
   try {
-    await dbInsertSale({
-      date, name, qty,
-      price: price,
-      total: qty * price,
-      comment: comment || 'Покупка гостя',
-      guest: true,
-      seller: currentUser.name,
-      payment_method: 'cash'
+    const { data: result, error: rpcError } = await db.rpc('sell_cigar', {
+      p_name: name,
+      p_qty: qty,
+      p_price: price,
+      p_date: date,
+      p_comment: comment || 'Покупка гостя',
+      p_seller: currentUser.name,
+      p_guest: true,
+      p_payment_method: 'cash',
+      p_buyer_login: currentUser.login
     });
-    await dbUpsertStock({ name, qty: item.qty - qty, price: item.price, date });
+    if (rpcError) throw new Error(rpcError.message || JSON.stringify(rpcError));
+    if (result && result.error) throw new Error(result.error);
     closeModal('modalGuestSale');
     toast('Покупка оформлена: ' + name + ' × ' + qty + ' шт.', 'success');
     await dbLoad();
@@ -1220,7 +1964,7 @@ async function submitGuestSale() {
 }
 
 async function submitIncoming() {
-  if (!CAN_EDIT(currentUser)) return;
+  if (!IS_ADMIN(currentUser)) return;
   const date    = document.getElementById('inDate').value;
   const name    = document.getElementById('inName').value.trim();
   const qty     = parseInt(document.getElementById('inQty').value);
@@ -1237,7 +1981,7 @@ async function submitIncoming() {
     await dbInsertIncoming({ date, name, qty, price, total: qty*price, comment });
     const ex = stock.find(r => r.name === name);
     const newQty = ex ? ex.qty + qty : qty;
-    await dbUpsertStock({ name, qty: newQty, price, date });
+    await dbUpsertStock({ name, qty: newQty, price, date, comment });
     closeModal('modalIncoming');
     toast('Поступление добавлено: ' + name + ' ×' + qty, 'success');
     await dbLoad();
@@ -1252,17 +1996,20 @@ async function submitIncoming() {
 }
 
 async function submitSale() {
-  if (!CAN_EDIT(currentUser)) return;
+  if (!CAN_SALE(currentUser)) return;
   const date    = document.getElementById('saleDate').value;
   const name    = document.getElementById('saleName').value;
   const qty     = parseInt(document.getElementById('saleQty').value);
-  const price   = parseFloat(document.getElementById('salePrice').value);
+  const basePrice = parseFloat(document.getElementById('salePrice').value);
   const comment = document.getElementById('saleComment').value.trim();
+  const guest   = saleIsGuest;
+  const applicable = isGuestMarkupApplicable();
+  const price   = (guest && applicable) ? Math.ceil(basePrice * 1.2) : basePrice;
   clearErrors('Sale');
   let ok = true;
   if (!name)              { showErr('saleName',  'errSaleName');  ok = false; }
   if (!qty || qty < 1)    { showErr('saleQty',   'errSaleQty');   ok = false; }
-  if (!price||price<=0)   { showErr('salePrice', 'errSalePrice'); ok = false; }
+  if (!basePrice||basePrice<=0) { showErr('salePrice', 'errSalePrice'); ok = false; }
   if (!ok) return;
   const item = stock.find(r => r.name === name);
   if (!item || item.qty < qty) {
@@ -1275,10 +2022,35 @@ async function submitSale() {
   }
   showLoading(true);
   try {
-    await dbInsertSale({ date, name, qty, price, total: qty * price, comment });
-    await dbUpsertStock({ name, qty: item.qty - qty, price: item.price, date });
+    // Атомарный вызов RPC — защита от race condition
+    const { data: result, error: rpcError } = await db.rpc('sell_cigar', {
+      p_name: name,
+      p_qty: qty,
+      p_price: price,
+      p_date: date,
+      p_comment: comment,
+      p_seller: currentUser.name,
+      p_guest: guest,
+      p_payment_method: salePaymentMethod,
+      p_buyer_login: currentUser.login
+    });
+    if (rpcError) throw new Error(rpcError.message);
+    if (result && result.error) {
+      const al = document.getElementById('alertSale');
+      al.textContent = result.error;
+      al.classList.add('show');
+      showLoading(false);
+      return;
+    }
+    // Обновляем баланс локально
+    if (salePaymentMethod === 'balance' && result.new_balance !== null) {
+      currentUser.balance = result.new_balance;
+      const u = USERS.find(u => u.login === currentUser.login);
+      if (u) u.balance = result.new_balance;
+      updateHeaderBalance();
+    }
     closeModal('modalSale');
-    toast('Продажа оформлена: ' + name + ' ×' + qty, 'success');
+    toast(`Продажа оформлена: ${name} ×${qty}${guest ? ' (гость, цена '+price+' AZN)' : ''}`, 'success');
     await dbLoad();
   } catch(e) {
     console.error('submitSale error:', e);
@@ -1329,8 +2101,18 @@ document.querySelectorAll('.modal-overlay').forEach(o => {
 // ── EDIT STOCK ──
 let editingStockId = null;
 
+let editingLocked = false;
+
+function setLocked(locked) {
+  editingLocked = locked;
+  document.getElementById('btnUnlock').style.background = locked ? 'var(--bg3)' : 'var(--gold)';
+  document.getElementById('btnUnlock').style.color = locked ? 'var(--text2)' : '#1a0f00';
+  document.getElementById('btnLock').style.background = locked ? '#8B0000' : 'var(--bg3)';
+  document.getElementById('btnLock').style.color = locked ? '#fff' : 'var(--text2)';
+}
+
 function openEditStock(stockId) {
-  if (!CAN_EDIT(currentUser)) return;
+  if (!IS_ADMIN(currentUser)) return;
   const item = stock.find(r => String(r.id) === String(stockId));
   if (!item) return;
   editingStockId = stockId;
@@ -1338,6 +2120,7 @@ function openEditStock(stockId) {
   document.getElementById('editQty').value   = item.qty;
   document.getElementById('editPrice').value = item.price.toFixed(2);
   document.getElementById('editComment').value = '';
+  setLocked(item.locked || false);
   document.querySelectorAll('#modalEditStock .err-msg').forEach(e => e.classList.remove('show'));
   document.querySelectorAll('#modalEditStock input').forEach(e => e.classList.remove('error'));
   document.getElementById('modalEditStock').classList.add('open');
@@ -1345,7 +2128,7 @@ function openEditStock(stockId) {
 }
 
 async function submitEditStock() {
-  if (!CAN_EDIT(currentUser)) return;
+  if (!IS_ADMIN(currentUser)) return;
   const qty     = parseInt(document.getElementById('editQty').value);
   const price   = parseFloat(document.getElementById('editPrice').value);
   const comment = document.getElementById('editComment').value.trim();
@@ -1365,11 +2148,12 @@ async function submitEditStock() {
   try {
     const diff = qty - item.qty;
     const note = '✏️ Ручная корректировка' + (comment ? ': ' + comment : '');
-    await dbUpsertStock({ name: item.name, qty, price, date: todayStr() });
+    await dbUpsertStock({ name: item.name, qty, price, date: todayStr(), locked: editingLocked });
     if (diff > 0) {
       await dbInsertIncoming({ date: todayStr(), name: item.name, qty: diff, price, total: diff * price, comment: note });
     } else if (diff < 0) {
-      await dbInsertSale({ date: todayStr(), name: item.name, qty: Math.abs(diff), price, total: Math.abs(diff) * price, comment: note });
+      // Корректировка в минус — пишем в поступления с отрицательным кол-вом для истории, НЕ в продажи
+      await dbInsertIncoming({ date: todayStr(), name: item.name, qty: diff, price, total: diff * price, comment: note });
     }
     closeModal('modalEditStock');
     toast('Позиция обновлена: ' + item.name, 'success');
@@ -1385,7 +2169,7 @@ async function submitEditStock() {
 let pendingRollbackId = null;
 
 function askRollback(saleId) {
-  if (!CAN_EDIT(currentUser)) return;
+  if (!IS_ADMIN(currentUser)) return;
   const sale = sales.find(s => String(s.id) === String(saleId));
   if (!sale) return;
   pendingRollbackId = saleId;
@@ -1406,12 +2190,25 @@ async function confirmRollback() {
 
   showLoading(true);
   try {
-    const item = stock.find(r => r.name === sale.name);
-    const newQty = item ? item.qty + sale.qty : sale.qty;
-    await dbUpsertStock({ name: sale.name, qty: newQty, price: item ? item.price : sale.price, date: todayStr() });
-    await dbDeleteSale(sale.id);
+    const { data: result, error } = await db.rpc('rollback_sale', {
+      p_sale_id: sale.id,
+      p_admin_login: currentUser.login,
+      p_admin_name: currentUser.name
+    });
+    if (error) throw new Error(error.message);
+    if (result && result.error) { toast('Ошибка: ' + result.error, 'error'); return; }
+
+    if (result.seller_login && result.new_balance !== null) {
+      const sellerUser = USERS.find(u => u.login === result.seller_login);
+      if (sellerUser) sellerUser.balance = result.new_balance;
+      if (currentUser.login === result.seller_login) {
+        currentUser.balance = result.new_balance;
+        updateHeaderBalance();
+      }
+    }
+
     closeConfirm();
-    toast('Продажа откатана: ' + sale.name + ' × ' + sale.qty + ' шт. возвращено на склад', 'success');
+    toast(`Продажа откатана: ${sale.name} ×${sale.qty} шт. возвращено на склад`, 'success');
     await dbLoad();
   } catch(e) {
     toast('Ошибка: ' + e.message, 'error');
@@ -1431,8 +2228,9 @@ document.getElementById('confirmOverlay').addEventListener('click', e => {
   if (session) {
     try {
       const s = JSON.parse(session);
-      const { data, error } = await db.from('users').select('*').eq('login', s.login).single();
-      if (data && !error) { currentUser = data; startApp(); return; }
+      const { data, error } = await db.from('users').select('*').ilike('login', s.login);
+      const user = data && data[0];
+      if (user && !error && user.blocked !== true) { currentUser = user; startApp(); return; }
     } catch(e) {}
     localStorage.removeItem('cig_session');
   }
