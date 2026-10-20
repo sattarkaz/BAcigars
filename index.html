@@ -560,9 +560,6 @@
         <input class="search-input" placeholder="Поиск..." id="searchStock" oninput="renderStock()"/>
         <button class="btn-refresh" onclick="refreshAll(this)" title="Обновить">🔄</button>
       </div>
-      <div id="guestPriceNote" style="display:none;background:rgba(41,128,185,0.12);border:1px solid #2980b9;border-radius:8px;padding:10px 14px;margin:0 16px 8px;font-size:13px;color:#85c1e9">
-        🛒 Цены указаны для гостей клуба (включая наценку 20%). Нажмите «🛒 Купить» для оформления.
-      </div>
       <div class="filters">
         <span class="filter-label">Фильтр:</span>
         <select class="filter-select" id="filterStockStatus" onchange="renderStock()">
@@ -579,7 +576,7 @@
             <th onclick="sortTable('stock','name')">Наименование <span class="sort-arrow">↕</span></th>
             <th onclick="sortTable('stock','qty')">Кол-во <span class="sort-arrow">↕</span></th>
             <th onclick="sortTable('stock','price')">Цена, AZN <span class="sort-arrow">↕</span></th>
-            <th onclick="sortTable('stock','total')">Сумма, AZN <span class="sort-arrow">↕</span></th>
+            <th id="thStockTotal" onclick="sortTable('stock','total')">Сумма, AZN <span class="sort-arrow">↕</span></th>
             <th onclick="sortTable('stock','date')">Изменено <span class="sort-arrow">↕</span></th>
             <th>Комментарий</th>
             <th id="thStockAction" style="width:70px"></th>
@@ -983,6 +980,14 @@
       <div class="err-msg" id="errGuestSaleQty">Введите корректное количество</div>
     </div>
     <div class="form-group">
+      <label>Способ оплаты</label>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button type="button" id="btnGuestCash" onclick="setGuestPayment('cash')" style="flex:1;padding:9px 0;border-radius:8px;border:1px solid var(--border);background:var(--gold);color:#1a0f00;font-weight:700;cursor:pointer;">💵 Наличные</button>
+        <button type="button" id="btnGuestBalance" onclick="setGuestPayment('balance')" style="flex:1;padding:9px 0;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:700;cursor:pointer;">💳 Баланс</button>
+      </div>
+      <div id="guestBalanceInfo" style="display:none;margin-top:8px;padding:8px 10px;background:rgba(41,128,185,0.1);border-radius:8px;font-size:13px;color:#85c1e9"></div>
+    </div>
+    <div class="form-group">
       <label>Комментарий</label>
       <input type="text" id="guestSaleComment" placeholder="Необязательно"/>
     </div>
@@ -1100,10 +1105,6 @@ function startApp() {
   // синий бейдж для гостя
   const badge = document.querySelector('.user-badge');
   if (badge) badge.classList.toggle('is-guest', isGuest);
-  // баннер с ценами для гостя
-  const guestNote = document.getElementById('guestPriceNote');
-  if (guestNote) guestNote.style.display = isGuest ? '' : 'none';
-
   // show/hide action buttons
   const canEdit = IS_ADMIN(currentUser);
   const canSale = CAN_SALE(currentUser);
@@ -1566,6 +1567,9 @@ function renderStock() {
   if (!data.length) { tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Нет данных</td></tr>'; return; }
   const canEdit = IS_ADMIN(currentUser);
   const isGuest = IS_GUEST(currentUser);
+  // скрываем столбец «Сумма» для гостей
+  const thTotal = document.getElementById('thStockTotal');
+  if (thTotal) thTotal.style.display = isGuest ? 'none' : '';
   if (isMobile()) {
     const wrap = document.getElementById('bodyStock').closest('.table-wrap');
     wrap.style.display = 'block';
@@ -1612,7 +1616,7 @@ function renderStock() {
         <td class="td-name">${esc(r.name)}${lockIcon}</td>
         <td class="td-qty ${qc}">${r.qty}</td>
         <td class="td-price">${formatNum(displayPrice)}</td>
-        <td class="td-total">${formatNum(displayTotal)}</td>
+        ${isGuest ? '' : `<td class="td-total">${formatNum(displayTotal)}</td>`}
         <td class="td-date">${formatDate(r.date)}</td>
         <td class="td-comment">${esc(r.comment||'')}</td>
         <td>${actionBtn}</td>
@@ -1899,6 +1903,26 @@ function fillSalePrice() {
 }
 
 // ── GUEST SALE ──
+let guestPaymentMethod = 'cash';
+
+function setGuestPayment(method) {
+  guestPaymentMethod = method;
+  const cashBtn = document.getElementById('btnGuestCash');
+  const balBtn  = document.getElementById('btnGuestBalance');
+  const balInfo = document.getElementById('guestBalanceInfo');
+  if (method === 'cash') {
+    cashBtn.style.background = 'var(--gold)'; cashBtn.style.color = '#1a0f00';
+    balBtn.style.background  = 'var(--bg3)';  balBtn.style.color  = 'var(--text2)';
+    balInfo.style.display = 'none';
+  } else {
+    cashBtn.style.background = 'var(--bg3)';  cashBtn.style.color = 'var(--text2)';
+    balBtn.style.background  = '#2980b9';     balBtn.style.color  = '#fff';
+    const bal = currentUser.balance || 0;
+    balInfo.style.display = '';
+    balInfo.textContent = `Ваш баланс: ${formatNum(bal)} AZN`;
+  }
+}
+
 function openGuestSale(name) {
   if (!IS_GUEST(currentUser)) return;
   const item = stock.find(r => r.name === name);
@@ -1909,6 +1933,8 @@ function openGuestSale(name) {
   document.getElementById('guestSaleStock').textContent = 'В наличии: ' + item.qty + ' шт.';
   document.getElementById('guestSaleQty').value = '1';
   document.getElementById('guestSaleComment').value = '';
+  guestPaymentMethod = 'cash';
+  setGuestPayment('cash');
   document.querySelectorAll('#modalGuestSale .err-msg').forEach(e => e.classList.remove('show'));
   const al = document.getElementById('alertGuestSale');
   al.classList.remove('show'); al.textContent = '';
@@ -1935,7 +1961,18 @@ async function submitGuestSale() {
     return;
   }
   const price = guestPrice(item.price);
+  const total = price * qty;
   const date  = todayStr();
+  // проверка баланса
+  if (guestPaymentMethod === 'balance') {
+    const bal = currentUser.balance || 0;
+    if (bal < total) {
+      const al = document.getElementById('alertGuestSale');
+      al.textContent = `Недостаточно средств на балансе. Нужно: ${formatNum(total)} AZN, доступно: ${formatNum(bal)} AZN`;
+      al.classList.add('show');
+      return;
+    }
+  }
   showLoading(true);
   try {
     const { data: result, error: rpcError } = await db.rpc('sell_cigar', {
@@ -1946,7 +1983,7 @@ async function submitGuestSale() {
       p_comment: comment || 'Покупка гостя',
       p_seller: currentUser.name,
       p_guest: true,
-      p_payment_method: 'cash',
+      p_payment_method: guestPaymentMethod,
       p_buyer_login: currentUser.login
     });
     if (rpcError) throw new Error(rpcError.message || JSON.stringify(rpcError));
